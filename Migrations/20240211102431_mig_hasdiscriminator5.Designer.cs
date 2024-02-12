@@ -4,6 +4,7 @@ using EfCoreShadowProperties;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240211102431_mig_hasdiscriminator5")]
+    partial class mig_hasdiscriminator5
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,25 +150,24 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Example", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<int>("Computed")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int")
                         .HasComputedColumnSql("[X]+[Y]");
-
-                    b.Property<int>("ExampleCode")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExampleCode"));
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
 
                     b.Property<int>("X")
                         .HasColumnType("int");
 
                     b.Property<int>("Y")
                         .HasColumnType("int");
+
+                    b.HasKey("Id");
 
                     b.ToTable("Examples");
                 });

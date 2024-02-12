@@ -4,6 +4,7 @@ using EfCoreShadowProperties;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240211101417_mig_hasdiscriminator3")]
+    partial class mig_hasdiscriminator3
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -147,25 +150,24 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Example", b =>
                 {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<int>("Computed")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int")
                         .HasComputedColumnSql("[X]+[Y]");
-
-                    b.Property<int>("ExampleCode")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExampleCode"));
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
 
                     b.Property<int>("X")
                         .HasColumnType("int");
 
                     b.Property<int>("Y")
                         .HasColumnType("int");
+
+                    b.HasKey("Id");
 
                     b.ToTable("Examples");
                 });
@@ -178,8 +180,10 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("Ayirici")
-                        .HasColumnType("int");
+                    b.Property<string>("Discriminator")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
 
                     b.Property<string>("X")
                         .IsRequired()
@@ -189,7 +193,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     b.ToTable("MyEntities");
 
-                    b.HasDiscriminator<int>("Ayirici").HasValue(3);
+                    b.HasDiscriminator<string>("Discriminator").HasValue("MyEntity");
 
                     b.UseTphMappingStrategy();
                 });
@@ -201,6 +205,11 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     b.Property<int>("PersonId2")
                         .HasColumnType("int");
+
+                    b.Property<string>("Ayirici")
+                        .IsRequired()
+                        .HasMaxLength(8)
+                        .HasColumnType("nvarchar(8)");
 
                     b.Property<DateTime>("CreatedDate")
                         .ValueGeneratedOnAdd()
@@ -223,6 +232,8 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.HasKey("PersonId", "PersonId2");
 
                     b.ToTable("Persons");
+
+                    b.HasDiscriminator<string>("Ayirici").HasValue("Person");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Post", b =>
@@ -260,7 +271,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<int>("Y")
                         .HasColumnType("int");
 
-                    b.HasDiscriminator().HasValue(1);
+                    b.HasDiscriminator().HasValue("A");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+B", b =>
@@ -270,7 +281,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<int>("Z")
                         .HasColumnType("int");
 
-                    b.HasDiscriminator().HasValue(2);
+                    b.HasDiscriminator().HasValue("B");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Address", b =>

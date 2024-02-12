@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     /// <inheritdoc />
-    public partial class CreatedDate_Person5 : Migration
+    public partial class mig_composite_key : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,15 +57,16 @@ namespace EfCoreCustomizingConfigurations.Migrations
                 name: "Persons",
                 columns: table => new
                 {
-                    PersonId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    PersonId = table.Column<int>(type: "int", nullable: false),
+                    PersonId2 = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    RowVersion = table.Column<byte[]>(type: "rowversion", rowVersion: true, nullable: false),
-                    CreatedDate = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "GETDATE()")
+                    Surname = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: true),
+                    Salary = table.Column<double>(type: "float", nullable: true),
+                    CreatedDate = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "GETDATE()", comment: "bu yaradilacaq obyektin tarixini ozunde tutur")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Persons", x => x.PersonId);
+                    table.PrimaryKey("PK_Persons", x => new { x.PersonId, x.PersonId2 });
                 });
 
             migrationBuilder.CreateTable(
@@ -118,28 +119,28 @@ namespace EfCoreCustomizingConfigurations.Migrations
                 name: "Addresses",
                 columns: table => new
                 {
-                    AddressId = table.Column<int>(type: "int", nullable: false)
-                        .Annotation("SqlServer:Identity", "1, 1"),
+                    AddressId = table.Column<int>(type: "int", nullable: false),
+                    PersonId = table.Column<int>(type: "int", nullable: false),
+                    PersonId2 = table.Column<int>(type: "int", nullable: false),
                     Street = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     City = table.Column<string>(type: "nvarchar(max)", nullable: false),
-                    PersonId = table.Column<int>(type: "int", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "GETDATE()")
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_Addresses", x => x.AddressId);
+                    table.PrimaryKey("PK_Addresses", x => new { x.PersonId, x.PersonId2, x.AddressId });
                     table.ForeignKey(
-                        name: "FK_Addresses_Persons_PersonId",
-                        column: x => x.PersonId,
+                        name: "FK_Addresses_Persons_PersonId_PersonId2",
+                        columns: x => new { x.PersonId, x.PersonId2 },
                         principalTable: "Persons",
-                        principalColumn: "PersonId",
+                        principalColumns: new[] { "PersonId", "PersonId2" },
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Addresses_PersonId",
+                name: "IX_Addresses_PersonId_PersonId2",
                 table: "Addresses",
-                column: "PersonId",
+                columns: new[] { "PersonId", "PersonId2" },
                 unique: true);
 
             migrationBuilder.CreateIndex(

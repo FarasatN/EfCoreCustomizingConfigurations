@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     /// <inheritdoc />
-    public partial class mig_composite_key : Migration
+    public partial class mig_identity_nonlinear_guid5 : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -54,6 +54,37 @@ namespace EfCoreCustomizingConfigurations.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "Examples",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false),
+                    ExampleCode = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
+                    X = table.Column<int>(type: "int", nullable: false),
+                    Y = table.Column<int>(type: "int", nullable: false),
+                    Computed = table.Column<int>(type: "int", nullable: false, computedColumnSql: "[X]+[Y]")
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Examples", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MyEntities",
+                columns: table => new
+                {
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
+                    X = table.Column<string>(type: "nvarchar(max)", nullable: false),
+                    Ayirici = table.Column<int>(type: "int", nullable: false),
+                    Y = table.Column<int>(type: "int", nullable: true),
+                    Z = table.Column<int>(type: "int", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MyEntities", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "Persons",
                 columns: table => new
                 {
@@ -61,7 +92,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     PersonId2 = table.Column<int>(type: "int", nullable: false),
                     Name = table.Column<string>(type: "nvarchar(max)", nullable: false),
                     Surname = table.Column<string>(type: "nvarchar(13)", maxLength: 13, nullable: true),
-                    Salary = table.Column<double>(type: "float", nullable: true),
+                    Salary = table.Column<double>(type: "float", nullable: false),
                     CreatedDate = table.Column<DateTime>(type: "datetime", nullable: false, defaultValueSql: "GETDATE()", comment: "bu yaradilacaq obyektin tarixini ozunde tutur")
                 },
                 constraints: table =>
@@ -162,6 +193,12 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             migrationBuilder.DropTable(
                 name: "BookAuthors");
+
+            migrationBuilder.DropTable(
+                name: "Examples");
+
+            migrationBuilder.DropTable(
+                name: "MyEntities");
 
             migrationBuilder.DropTable(
                 name: "Posts");

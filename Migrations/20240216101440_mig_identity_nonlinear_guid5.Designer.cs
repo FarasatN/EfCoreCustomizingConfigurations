@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    [Migration("20240211115848_mig_hasfield")]
-    partial class mig_hasfield
+    [Migration("20240216101440_mig_identity_nonlinear_guid5")]
+    partial class mig_identity_nonlinear_guid5
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -151,15 +151,17 @@ namespace EfCoreCustomizingConfigurations.Migrations
             modelBuilder.Entity("EfCoreShadowProperties.Program+Example", b =>
                 {
                     b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
                         .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<int>("Computed")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int")
                         .HasComputedColumnSql("[X]+[Y]");
+
+                    b.Property<Guid>("ExampleCode")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
 
                     b.Property<int>("X")
                         .HasColumnType("int");

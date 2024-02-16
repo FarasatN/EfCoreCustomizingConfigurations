@@ -147,25 +147,26 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Example", b =>
                 {
+                    b.Property<int>("Id")
+                        .HasColumnType("int");
+
                     b.Property<int>("Computed")
                         .ValueGeneratedOnAddOrUpdate()
                         .HasColumnType("int")
                         .HasComputedColumnSql("[X]+[Y]");
 
-                    b.Property<int>("ExampleCode")
+                    b.Property<Guid>("ExampleCode")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("ExampleCode"));
-
-                    b.Property<int>("Id")
-                        .HasColumnType("int");
+                        .HasColumnType("uniqueidentifier")
+                        .HasDefaultValueSql("NEWID()");
 
                     b.Property<int>("X")
                         .HasColumnType("int");
 
                     b.Property<int>("Y")
                         .HasColumnType("int");
+
+                    b.HasKey("Id");
 
                     b.ToTable("Examples");
                 });

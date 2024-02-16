@@ -1,6 +1,8 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Reflection.Emit;
 using System.Security.Cryptography.X509Certificates;
 
@@ -10,6 +12,15 @@ namespace EfCoreShadowProperties
     {
         public static async Task Main(string[] args)
         {
+            Console.BackgroundColor = ConsoleColor.Black;
+            Console.ForegroundColor = ConsoleColor.Green;
+            //for executing speed
+            //exetunig started
+            Stopwatch stopwatch = new Stopwatch();
+            stopwatch.Start();
+            //*********************************************
+
+
             Console.WriteLine("Ef Core Customizing Configurations!");
             var context = new AppDbContext();
 
@@ -165,17 +176,52 @@ namespace EfCoreShadowProperties
             //bir table da identity ancaq tek bir defe teyin oluna biler    
 
             //bir columndan identity ni ayirmaq
-            Example exmp = new()
-            {
-                X = 1,
-                Y = 2,
-            };
+            
 
-            await context.AddAsync(exmp);
-            await context.SaveChangesAsync();
+            //Random rand = new();
+
+            //for (int i = 0; i <= 10; i++)
+            //{
+            //    Example exmp = new()
+            //    {
+
+            //        X = rand.Next(100),
+            //        Y = rand.Next(100),
+            //    };
+            //    context.Examples.Add(exmp);
+            //}
+            //Example exmp = new()
+            //{
+            //    Id = 1,
+            //    X = rand.Next(100),
+            //    Y = rand.Next(100),
+            //};
+            //context.Examples.Add(exmp);
+            //context.SaveChanges();
+
+            //Execution Time: 5730 milliseconds / 5.73
+
+            //DatabaseGenerated
+            //DatabaseGenerated.None - ValueGeneratedNever - deger yaradilmayacaq
+            //DatabaseGenerated.Computed - ValueGeneratedOnAddOrUpdate - default deyer yaradilacaqsa
+            //DatabaseGenerated.Identity - ardicil sekilde deyer yaradilacaqsa columnda, bir entityde yalniz bir eded ola biler
+
+            //ardicil olmayan zaman ise, meselen guid basqa cur davraniriq
+
+            //demek olar ki, real heyeatda bele bir ssenari ile qarsilasmayacaqsan, hansi ki pk ile identity ayri olsun
+
+
+            //--------------------------
+            //IEntityTypeConfiguration - konfiqurasiyalari xarici fayllara ayirmaq
 
 
 
+            //****************************
+            //exetunig stopped
+            stopwatch.Stop();
+            Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} milliseconds / {stopwatch.ElapsedMilliseconds / 1000.0}");
+            //for exm: Execution Time: 5730 milliseconds / 5.73
+            Console.ResetColor();
         }
 
         //HasDiscriminator
@@ -196,11 +242,16 @@ namespace EfCoreShadowProperties
         //HasComputedColumn
         public class Example
         {
-            //[Key]
-            [DatabaseGenerated(DatabaseGeneratedOption.None)]
+
+            //bu numune ile pk ile identityni ayiririq, ama cox ist. olunmur
+            [Key]
+            //[DatabaseGenerated(DatabaseGeneratedOption.None)]
             public int Id { get; set; }
+
             [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-            public int ExampleCode { get; set; }
+            //ya da fluent api ile bunu etmek olar
+            //public int ExampleCode { get; set; }
+            public Guid ExampleCode { get; set; }
 
             public int X { get; set; }
             public int Y { get; set; }
@@ -334,27 +385,8 @@ namespace EfCoreShadowProperties
 
         public class AppDbContext : DbContext
         {
-            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
-            {
-                optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
-            }
-
-            public DbSet<Person> Persons { get; set; }
-            public DbSet<Address> Addresses { get; set; }
-            public DbSet<Blog> Blogs { get; set; }
-            public DbSet<Post> Posts { get; set; }
-            public DbSet<Book> Books { get; set; }
-            public DbSet<Author> Authors { get; set; }
-            public DbSet<BookAuthor> BookAuthors { get; set; }
-            public DbSet<Example> Examples { get; set; }
-            public DbSet<A> As{ get; set; }
-            public DbSet<B> Bs { get; set; }
-            public DbSet<MyEntity> MyEntities { get; set; }
-
-
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
-
                 //1 to 1
                 //modelBuilder.Entity<Person>()
                 //.HasOne(p => p.Address)
@@ -535,10 +567,28 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<Example>()
                     .Property(p => p.Computed)
                     .HasComputedColumnSql("[X]+[Y]");
+                    //.ValueGeneratedOnAdd();//- ya burdan, ya da data annotat. dan
 
                 //HasNoKey
+                //modelBuilder.Entity<Example>()
+                //    .HasNoKey();
+
+                //DatabaseGenerated - disabling auto increment for pk, because identity is ExampeCode
                 modelBuilder.Entity<Example>()
-                    .HasNoKey();
+                    .Property(e => e.Id)
+                    .ValueGeneratedNever();
+
+                modelBuilder.Entity<Example>()
+                    .Property(e => e.ExampleCode)
+                    .HasDefaultValueSql("NEWID()");
+                //.HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+
+                //modelBuilder.Entity<Example>()
+                //    .Property(e => e.ExampleCode)
+                //    .ValueGeneratedOnAdd();
+                //[DatabaseGenerated(DatabaseGeneratedOption.Identity)] - data annotationun fluent api versiyasidir, eyni seydir
+
+                //-------------------------------------
 
                 //GetEntityTypes - cox da aktiv ist. etmesek de, bilmek faydalidi
                 //var entities = modelBuilder.Model.GetEntityTypes();
@@ -551,6 +601,31 @@ namespace EfCoreShadowProperties
                 base.OnModelCreating(modelBuilder);
 
             }
+
+
+
+
+
+
+
+
+
+            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+            {
+                optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
+            }
+
+            public DbSet<Person> Persons { get; set; }
+            public DbSet<Address> Addresses { get; set; }
+            public DbSet<Blog> Blogs { get; set; }
+            public DbSet<Post> Posts { get; set; }
+            public DbSet<Book> Books { get; set; }
+            public DbSet<Author> Authors { get; set; }
+            public DbSet<BookAuthor> BookAuthors { get; set; }
+            public DbSet<Example> Examples { get; set; }
+            public DbSet<A> As { get; set; }
+            public DbSet<B> Bs { get; set; }
+            public DbSet<MyEntity> MyEntities { get; set; }
         }
 
     }

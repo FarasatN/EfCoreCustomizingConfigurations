@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     /// <inheritdoc />
-    public partial class mig_identity_nonlinear_guid5 : Migration
+    public partial class mig_ientitytypeconfiguration : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -57,11 +57,13 @@ namespace EfCoreCustomizingConfigurations.Migrations
                 name: "Examples",
                 columns: table => new
                 {
-                    Id = table.Column<int>(type: "int", nullable: false),
+                    Id = table.Column<int>(type: "int", nullable: false)
+                        .Annotation("SqlServer:Identity", "1, 1"),
                     ExampleCode = table.Column<Guid>(type: "uniqueidentifier", nullable: false, defaultValueSql: "NEWID()"),
-                    X = table.Column<int>(type: "int", nullable: false),
+                    X = table.Column<int>(type: "int", maxLength: 7, nullable: false),
                     Y = table.Column<int>(type: "int", nullable: false),
-                    Computed = table.Column<int>(type: "int", nullable: false, computedColumnSql: "[X]+[Y]")
+                    Computed = table.Column<int>(type: "int", nullable: false, computedColumnSql: "[X]+[Y]"),
+                    ExampleDate = table.Column<DateTime>(type: "datetime2(7)", nullable: false)
                 },
                 constraints: table =>
                 {

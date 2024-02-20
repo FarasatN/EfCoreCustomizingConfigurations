@@ -1,8 +1,11 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.Extensions.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
+using System.Reflection;
 using System.Reflection.Emit;
 using System.Security.Cryptography.X509Certificates;
 
@@ -13,7 +16,7 @@ namespace EfCoreShadowProperties
         public static async Task Main(string[] args)
         {
             Console.BackgroundColor = ConsoleColor.Black;
-            Console.ForegroundColor = ConsoleColor.Green;
+            Console.ForegroundColor = ConsoleColor.Cyan;
             //for executing speed
             //exetunig started
             Stopwatch stopwatch = new Stopwatch();
@@ -22,206 +25,266 @@ namespace EfCoreShadowProperties
 
 
             Console.WriteLine("Ef Core Customizing Configurations!");
-            var context = new AppDbContext();
-
-            //EfCore un default davranislari vardir. Yeri geldikce biz onu deyismek mecburiyyetinde olacagiq
-            //Buna gore de elave confiqurasiyalara ehtiyyacimiz olacaq
-
-            //OnModelCreating method - bir model yaradilarken butun konf.+ burdan edilir
-
-            //GetEntityTypes - entityleri elde etmek,ogrenmek ucun ist. edilir - OnModelCreatingin icinde olur
-            //cox da aktiv ist. etmesek de, bilmek faydalidi
-
-            //ToTable - DbSetden ferqli ad vermek isteyirsense
-
-            //EGER EYNI VAXTDA FERQLI YANASMALARDAN ISTIFADE OLUNURSA, FLUENT API ESAS GOTURULECEKDIR
-
-            //Column - HasColumnName, HasColumnType, HasColumnOrder
-            //Default olaraq propertylerin adi column adi, tipi ise column tipidir, bunu customize ede bilirik bununla
-
-            //ForeignKey/HasForeignKey - Dependant entityde olur
-            //eger ist. etmesek shadow properties kimi  arxa planda yene yaradacaq, amma tableda gorunmeyecek
-
-            //Not Mapped - entityde gormek istemediyimiz propertyleri isarelemek ucun ist. edirik
-            //Ignore - ise Fluent API versiyasidir.
-
-            //Key - HasKey - default conventio da Id, ID, EntityID kimi proertyler hamisi default olaraq primary key constraint olur
-            //Bu property sayesinde biz dc -dan elave istediyimz property ye primary key tetbiq ede bilirik
-            // yeni ozumuz PK teyin ede bilirik
-
-            //Timestamp/IsRowVersion - property nin versiyalarini tutur
-
-            //Person p = new();
-            //p.Name = "Test";
-            //p.Address = new()
-            //{
-            //    Street = "M. Asad 12",
-            //    City = "Sumgayit"
-            //};
-            //context.Persons.Add(p);
-            //await context.SaveChangesAsync();
-
-            //var person = await context.Persons.FindAsync(1);
-            //person.Name = "Ahmet";
-            //await context.SaveChangesAsync();
-            //Console.WriteLine();
-
-            //Required/IsRequired - bir columnun nullable yaxud not null oldugunu konfiqurasiya edirik
-            //default olaraq eger isare olunmayibsa -  not null/required olacaq
-            //Nullable olmasi ucun - ?,
-            //Fluent API de - IsRequired deye bolirik
-
-            //MaxLength/ HasMaxLength/ StringLength
-
-            //Percision/HasPrecision - kesirli sayilarda bir deqiqlik yaradan ve noqtenin xanasini bildirmemizi yaradan bir yapilandirmadir
-            //[Precision(2,4)] - ya da Fulent API ile
+            using (var context = new AppDbContext())
+            {
 
 
-            //Unicode/ IsUniCode - Column icinde unicode characterler olacaqsa
-            //[Unicode] - ya da FA ile (IsUnicode)
+                //EfCore un default davranislari vardir. Yeri geldikce biz onu deyismek mecburiyyetinde olacagiq
+                //Buna gore de elave confiqurasiyalara ehtiyyacimiz olacaq
 
-            //Comment / HasComment -  bezen gerekli olir
-            //[Comment("bu bunun ucundur")] - ya da FA ile
+                //OnModelCreating method - bir model yaradilarken butun konf.+ burdan edilir
 
+                //GetEntityTypes - entityleri elde etmek,ogrenmek ucun ist. edilir - OnModelCreatingin icinde olur
+                //cox da aktiv ist. etmesek de, bilmek faydalidi
 
-            //ConcurrencyCheck / IsConcurrencyToken - bu da RowVersion  kimi data teqib zamani butunluk ucun lazimdir, ileride deyinilecek
+                //ToTable - DbSetden ferqli ad vermek isteyirsense
 
+                //EGER EYNI VAXTDA FERQLI YANASMALARDAN ISTIFADE OLUNURSA, FLUENT API ESAS GOTURULECEKDIR
 
-            //InverseProperty - 2 entity arasinda birden cox elaqe varsa, bunu deqiqlesdirmek ucundur
+                //Column - HasColumnName, HasColumnType, HasColumnOrder
+                //Default olaraq propertylerin adi column adi, tipi ise column tipidir, bunu customize ede bilirik bununla
 
+                //ForeignKey/HasForeignKey - Dependant entityde olur
+                //eger ist. etmesek shadow properties kimi  arxa planda yene yaradacaq, amma tableda gorunmeyecek
 
-            ///////////
+                //Not Mapped - entityde gormek istemediyimiz propertyleri isarelemek ucun ist. edirik
+                //Ignore - ise Fluent API versiyasidir.
 
-            //Composite Key - Tableda birde cox columnun birlesik/elaqeli sekilde primary key olmasini isteyirikse
+                //Key - HasKey - default conventio da Id, ID, EntityID kimi proertyler hamisi default olaraq primary key constraint olur
+                //Bu property sayesinde biz dc -dan elave istediyimz property ye primary key tetbiq ede bilirik
+                // yeni ozumuz PK teyin ede bilirik
 
-            //HasDefaultSchema - default olaraq dbo dur, bunu ezir
+                //Timestamp/IsRowVersion - property nin versiyalarini tutur
 
-            //HasDefaultValue - property e default deyer atayir
-            //Person person = new()
-            //{
-            //    Name = "Farasat",
-            //    CreatedDate = DateTime.Now,
-            //    Address = new()
-            //    {
-            //        City = "Baku",
-            //        Street = "M.Asad,Saray"
-            //    }
-            //};
-            //await context.AddAsync(person);
-            //await context.SaveChangesAsync();
+                //Person p = new();
+                //p.Name = "Test";
+                //p.Address = new()
+                //{
+                //    Street = "M. Asad 12",
+                //    City = "Sumgayit"
+                //};
+                //context.Persons.Add(p);
+                //await context.SaveChangesAsync();
 
-            //HasDefaultValueSql- ise default olaraq hansi sql cumlesinden deyeri alacagini teyin edir
+                //var person = await context.Persons.FindAsync(1);
+                //person.Name = "Ahmet";
+                //await context.SaveChangesAsync();
+                //Console.WriteLine();
 
-            //HasComputedColumn - avtomatik hesablama aparib bir columnda gosterir, excel kimi
+                //Required/IsRequired - bir columnun nullable yaxud not null oldugunu konfiqurasiya edirik
+                //default olaraq eger isare olunmayibsa -  not null/required olacaq
+                //Nullable olmasi ucun - ?,
+                //Fluent API de - IsRequired deye bolirik
 
-            //HasConstraintName() - genelde buna deymesek de, constraintlere name veririk
+                //MaxLength/ HasMaxLength/ StringLength
 
-            //HasData - SeedData ile elaqelidir. Bu baglamda migrate ederken, database yaranarkedn, bir yandan da hazir datalar uzerinden data gondermek lazim olur
-
-            //HasDiscriminator - ileride enityler arasinda toreme elaqelerin oldugu TPT ve TPH adinda movzular olacaq.
-            //Bunlarla elaqeli HasDiscriminator ve HasValue metodlaridir
-
-            //A a = new()
-            //{
-            //    X = "A dan",
-            //    Y = 1
-            //};
-            //B b = new()
-            //{
-            //    X = "B den",
-            //    Z = 2
-            //};
-            //MyEntity myEntity = new()
-            //{
-            //    X = "MyEntity den"
-            //};
-
-            //context.As.Add(a);
-            //context.Bs.Add(b);
-            //context.MyEntities.Add(myEntity);
-            //context.SaveChanges();
+                //Percision/HasPrecision - kesirli sayilarda bir deqiqlik yaradan ve noqtenin xanasini bildirmemizi yaradan bir yapilandirmadir
+                //[Precision(2,4)] - ya da Fulent API ile
 
 
-            //HasField - Backing Fileds ozelliyi ile elaqedardir
+                //Unicode/ IsUniCode - Column icinde unicode characterler olacaqsa
+                //[Unicode] - ya da FA ile (IsUnicode)
 
-            //HasNoKey - normalda butun entitylerde primary key olmalidir.Eger olmayacaqsa, bildirilmelidir
-
-            //HasIndex - Sonraki derslerde detalli olaraq incelencek
-
-            //HasQueryFilter - 
-
-            //DatabaseGenerated - irelide Global Query Filter dersinin config.-dir.
-            //Esas meqsedi bir entity-e qarsiliq application seviyyesinde bir global filter duzeltmekdir
+                //Comment / HasComment -  bezen gerekli olir
+                //[Comment("bu bunun ucundur")] - ya da FA ile
 
 
-            //--------------------------------------
-            //DatabaseGenerated - ValueGeneratedOnAddOrUpdate, ValueGeneratedOnAdd, ValueGeneratedNever
-
-            //GeneratedValue nedir? - misal ucun, avtomatik primary keyin artmasi, istesek oz isteyimize uygun artar
-
-            //Default Values - table-in her hansi columnuna coding terefinden hec bir deyer gondermesek de, sql terefinde onun yazilacagini ifade edir
-
-            //HasDefaultValue - direct static deyer veririk, hemin deyeri vermesek de avtomatik yazilacaq
-            //HasDefaultValueSql - ise sql sorgusu, cumlesi veririk
-            //Computed Columns
-
-            //bunlari evvel detalli islemisik!
-
-            //Primary Keys - herhansi bir tableda setirleri kimlik vari sekilde tanidan, unique olan sutun ve ya sutunlardir
-
-            //Identity - ise yalnizca avtomatik olaraq artan sutundur,pk olmaya da biler, ayrica ist. oluna bilir
-
-            //Ef Core da cox vaxt birlikde ist. olunur ve pk hem de identity olur
-
-            //bir table da identity ancaq tek bir defe teyin oluna biler    
-
-            //bir columndan identity ni ayirmaq
-            
-
-            //Random rand = new();
-
-            //for (int i = 0; i <= 10; i++)
-            //{
-            //    Example exmp = new()
-            //    {
-
-            //        X = rand.Next(100),
-            //        Y = rand.Next(100),
-            //    };
-            //    context.Examples.Add(exmp);
-            //}
-            //Example exmp = new()
-            //{
-            //    Id = 1,
-            //    X = rand.Next(100),
-            //    Y = rand.Next(100),
-            //};
-            //context.Examples.Add(exmp);
-            //context.SaveChanges();
-
-            //Execution Time: 5730 milliseconds / 5.73
-
-            //DatabaseGenerated
-            //DatabaseGenerated.None - ValueGeneratedNever - deger yaradilmayacaq
-            //DatabaseGenerated.Computed - ValueGeneratedOnAddOrUpdate - default deyer yaradilacaqsa
-            //DatabaseGenerated.Identity - ardicil sekilde deyer yaradilacaqsa columnda, bir entityde yalniz bir eded ola biler
-
-            //ardicil olmayan zaman ise, meselen guid basqa cur davraniriq
-
-            //demek olar ki, real heyeatda bele bir ssenari ile qarsilasmayacaqsan, hansi ki pk ile identity ayri olsun
+                //ConcurrencyCheck / IsConcurrencyToken - bu da RowVersion  kimi data teqib zamani butunluk ucun lazimdir, ileride deyinilecek
 
 
-            //--------------------------
-            //IEntityTypeConfiguration - konfiqurasiyalari xarici fayllara ayirmaq
+                //InverseProperty - 2 entity arasinda birden cox elaqe varsa, bunu deqiqlesdirmek ucundur
 
 
+                ///////////
 
+                //Composite Key - Tableda birde cox columnun birlesik/elaqeli sekilde primary key olmasini isteyirikse
+
+                //HasDefaultSchema - default olaraq dbo dur, bunu ezir
+
+                //HasDefaultValue - property e default deyer atayir
+                //Person person = new()
+                //{
+                //    Name = "Farasat",
+                //    CreatedDate = DateTime.Now,
+                //    Address = new()
+                //    {
+                //        City = "Baku",
+                //        Street = "M.Asad,Saray"
+                //    }
+                //};
+                //await context.AddAsync(person);
+                //await context.SaveChangesAsync();
+
+                //HasDefaultValueSql- ise default olaraq hansi sql cumlesinden deyeri alacagini teyin edir
+
+                //HasComputedColumn - avtomatik hesablama aparib bir columnda gosterir, excel kimi
+
+                //HasConstraintName() - genelde buna deymesek de, constraintlere name veririk
+
+                //HasData - SeedData ile elaqelidir. Bu baglamda migrate ederken, database yaranarkedn, bir yandan da hazir datalar uzerinden data gondermek lazim olur
+
+                //HasDiscriminator - ileride enityler arasinda toreme elaqelerin oldugu TPT ve TPH adinda movzular olacaq.
+                //Bunlarla elaqeli HasDiscriminator ve HasValue metodlaridir
+
+                //A a = new()
+                //{
+                //    X = "A dan",
+                //    Y = 1
+                //};
+                //B b = new()
+                //{
+                //    X = "B den",
+                //    Z = 2
+                //};
+                //MyEntity myEntity = new()
+                //{
+                //    X = "MyEntity den"
+                //};
+
+                //context.As.Add(a);
+                //context.Bs.Add(b);
+                //context.MyEntities.Add(myEntity);
+                //context.SaveChanges();
+
+
+                //HasField - Backing Fileds ozelliyi ile elaqedardir
+
+                //HasNoKey - normalda butun entitylerde primary key olmalidir.Eger olmayacaqsa, bildirilmelidir
+
+                //HasIndex - Sonraki derslerde detalli olaraq incelencek
+
+                //HasQueryFilter - 
+
+                //DatabaseGenerated - irelide Global Query Filter dersinin config.-dir.
+                //Esas meqsedi bir entity-e qarsiliq application seviyyesinde bir global filter duzeltmekdir
+
+
+                //--------------------------------------
+                //DatabaseGenerated - ValueGeneratedOnAddOrUpdate, ValueGeneratedOnAdd, ValueGeneratedNever
+
+                //GeneratedValue nedir? - misal ucun, avtomatik primary keyin artmasi, istesek oz isteyimize uygun artar
+
+                //Default Values - table-in her hansi columnuna coding terefinden hec bir deyer gondermesek de, sql terefinde onun yazilacagini ifade edir
+
+                //HasDefaultValue - direct static deyer veririk, hemin deyeri vermesek de avtomatik yazilacaq
+                //HasDefaultValueSql - ise sql sorgusu, cumlesi veririk
+                //Computed Columns
+
+                //bunlari evvel detalli islemisik!
+
+                //Primary Keys - herhansi bir tableda setirleri kimlik vari sekilde tanidan, unique olan sutun ve ya sutunlardir
+
+                //Identity - ise yalnizca avtomatik olaraq artan sutundur,pk olmaya da biler, ayrica ist. oluna bilir
+
+                //Ef Core da cox vaxt birlikde ist. olunur ve pk hem de identity olur
+
+                //bir table da identity ancaq tek bir defe teyin oluna biler    
+
+                //bir columndan identity ni ayirmaq
+
+
+                //Random rand = new();
+
+                //for (int i = 0; i <= 10; i++)
+                //{
+                //    Example exmp = new()
+                //    {
+
+                //        X = rand.Next(100),
+                //        Y = rand.Next(100),
+                //    };
+                //    context.Examples.Add(exmp);
+                //}
+                //Example exmp = new()
+                //{
+                //    Id = 1,
+                //    X = rand.Next(100),
+                //    Y = rand.Next(100),
+                //};
+                //context.Examples.Add(exmp);
+                //context.SaveChanges();
+
+                //Execution Time: 5730 milliseconds / 5.73
+
+                //DatabaseGenerated
+                //DatabaseGenerated.None - ValueGeneratedNever - deger yaradilmayacaq
+                //DatabaseGenerated.Computed - ValueGeneratedOnAddOrUpdate - default deyer yaradilacaqsa
+                //DatabaseGenerated.Identity - ardicil sekilde deyer yaradilacaqsa columnda, bir entityde yalniz bir eded ola biler
+
+                //ardicil olmayan zaman ise, meselen guid basqa cur davraniriq
+
+                //demek olar ki, real heyeatda bele bir ssenari ile qarsilasmayacaqsan, hansi ki pk ile identity ayri olsun
+
+
+                //--------------------------
+                //IEntityTypeConfiguration - konfiqurasiyalari xarici fayllara ayirmaq
+
+                //DATA ANNOTAION ILE KONFIQ.+ ESLINDE SOLIDIN SINGLE RESPONSIBILITY PRINSIBINE ZIDDIR
+                //amma yene de fluent api ile her seyi yazanda hemin metodun ici cox qarisiq olur
+                //buna gore de IEntityType ile Entity temelli bolmekle sadelesdirmek olar
+
+                //OnModelCreating - Entity ler uzerinde konf. deyisiklikleri etdiyimiz Metoddur
+                //data annotationda tam butun ozellikler toxdur, ona gore fluent api ile beraber yazmalisan
+                //buna gorede de hemin class ile boluruk
+
+                //IEntityTypeConfiguration - umumi konfiqurasiyalar dan basqa, entity ile elaqedar ozelliklerin
+                //ayrica classda konf. edir
+                //yeni, eneitiye ozel xarici faylda saxlanilir
+                //entity cox olanda xarici faylda saxlamaq idareetmeni asanlasdirir
+
+                //esasen Onion architectura kimi boyuk, clean code proyektlerde ist. olunur
+                //for exmp: class ExampleConfiguration: IEntityTypeConfiguration<Example>
+
+                //adding data
+                Random rand = new();
+                for (int i = 0; i <= 1000; i++)
+                {
+                    Example exmp = new()
+                    {
+                        X = rand.Next(100),
+                        Y = rand.Next(100),
+                        ExampleDate = DateTime.Now
+                    };
+                    await context.Examples.AddAsync(exmp);
+                }
+                await context.SaveChangesAsync();
+
+                //ApplyConfiguration - edilen konfiqurasiyalari tetbiq edir
+
+                //ApplyConfigurationForAssembly- tek tek konf. i bildirmek yerine umumi konfiqurasilar
+                //toplusununun oldugu classi (Assembly) teyin edirik(OnModelCreating icinde edirik, reflection avtomatik tutur)
+
+                //yuxaridaki yazdiqlarimiz best practice ucun tovsiyye olunur
+                //CUNKI SINGLE RESPONSIBLE A DA UYGUNDUR
+
+
+            }
             //****************************
-            //exetunig stopped
+            //executig stopped
             stopwatch.Stop();
             Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} milliseconds / {stopwatch.ElapsedMilliseconds / 1000.0}");
             //for exm: Execution Time: 5730 milliseconds / 5.73
             Console.ResetColor();
+        }
+
+        //IEntityTypeConfiguration
+        public class ExampleConfiguration : IEntityTypeConfiguration<Example>
+        {
+            public void Configure(EntityTypeBuilder<Example> builder)
+            {
+                builder.HasKey(ex => ex.Id);
+                builder.Property(ex => ex.X).IsRequired().HasMaxLength(7);
+                builder.Property(ex => ex.Computed)
+                    .HasComputedColumnSql("[X]+[Y]");
+                builder.Property(e => e.ExampleCode)
+                    .HasDefaultValueSql("NEWID()");
+                //.HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+                //builder.Property(ex => ex.ExampleDate)
+                //    .HasDefaultValueSql("GETDATE()");
+                builder.Property(ex => ex.ExampleDate)
+                .HasColumnType("datetime2(7)"); // Use datetime2 for better precision
+                //.HasPrecision(3);
+            }
         }
 
         //HasDiscriminator
@@ -256,6 +319,8 @@ namespace EfCoreShadowProperties
             public int X { get; set; }
             public int Y { get; set; }
             public int Computed { get; set; }
+
+            public DateTime ExampleDate { get; set; }
         }
 
 
@@ -564,23 +629,23 @@ namespace EfCoreShadowProperties
                 //-----------------------------------------
 
                 //HasComputedColumnSql
-                modelBuilder.Entity<Example>()
-                    .Property(p => p.Computed)
-                    .HasComputedColumnSql("[X]+[Y]");
-                    //.ValueGeneratedOnAdd();//- ya burdan, ya da data annotat. dan
+                //modelBuilder.Entity<Example>()
+                //    .Property(p => p.Computed)
+                //    .HasComputedColumnSql("[X]+[Y]");
+                //.ValueGeneratedOnAdd();//- ya burdan, ya da data annotat. dan
 
                 //HasNoKey
                 //modelBuilder.Entity<Example>()
                 //    .HasNoKey();
 
                 //DatabaseGenerated - disabling auto increment for pk, because identity is ExampeCode
-                modelBuilder.Entity<Example>()
-                    .Property(e => e.Id)
-                    .ValueGeneratedNever();
+                //modelBuilder.Entity<Example>()
+                //    .Property(e => e.Id)
+                //    .ValueGeneratedNever();
 
-                modelBuilder.Entity<Example>()
-                    .Property(e => e.ExampleCode)
-                    .HasDefaultValueSql("NEWID()");
+                //modelBuilder.Entity<Example>()
+                //    .Property(e => e.ExampleCode)
+                //    .HasDefaultValueSql("NEWID()");
                 //.HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
 
                 //modelBuilder.Entity<Example>()
@@ -589,6 +654,13 @@ namespace EfCoreShadowProperties
                 //[DatabaseGenerated(DatabaseGeneratedOption.Identity)] - data annotationun fluent api versiyasidir, eyni seydir
 
                 //-------------------------------------
+
+                //IEntityTypeConfiguration
+                //modelBuilder.ApplyConfiguration(new ExampleConfiguration());
+
+                //ApplyConfigurationsFromAssembly
+                modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+
 
                 //GetEntityTypes - cox da aktiv ist. etmesek de, bilmek faydalidi
                 //var entities = modelBuilder.Model.GetEntityTypes();

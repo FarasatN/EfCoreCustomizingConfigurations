@@ -4,6 +4,7 @@ using EfCoreShadowProperties;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240220165439_mig_seeddata")]
+    partial class mig_seeddata
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -100,14 +103,14 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.HasData(
                         new
                         {
-                            BlogId = 3,
-                            CreatedDate = new DateTime(2024, 2, 20, 21, 31, 8, 866, DateTimeKind.Local).AddTicks(4879),
+                            BlogId = 1,
+                            CreatedDate = new DateTime(2024, 2, 20, 20, 54, 39, 334, DateTimeKind.Local).AddTicks(1230),
                             Title = "Quantum"
                         },
                         new
                         {
                             BlogId = 2,
-                            CreatedDate = new DateTime(2024, 2, 20, 21, 31, 8, 866, DateTimeKind.Local).AddTicks(4954),
+                            CreatedDate = new DateTime(2024, 2, 20, 20, 54, 39, 334, DateTimeKind.Local).AddTicks(1241),
                             Title = "Evolution"
                         });
                 });
@@ -267,22 +270,6 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.HasIndex("BlogId");
 
                     b.ToTable("Posts");
-
-                    b.HasData(
-                        new
-                        {
-                            PostId = 8,
-                            BlogId = 2,
-                            Content = "Islam and evolution",
-                            CreatedDate = new DateTime(2024, 2, 20, 21, 31, 8, 866, DateTimeKind.Local).AddTicks(5114)
-                        },
-                        new
-                        {
-                            PostId = 2,
-                            BlogId = 1,
-                            Content = "Schrodinger's cat",
-                            CreatedDate = new DateTime(2024, 2, 20, 21, 31, 8, 866, DateTimeKind.Local).AddTicks(5116)
-                        });
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+A", b =>

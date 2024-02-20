@@ -236,18 +236,18 @@ namespace EfCoreShadowProperties
                 //for exmp: class ExampleConfiguration: IEntityTypeConfiguration<Example>
 
                 //adding data
-                Random rand = new();
-                for (int i = 0; i <= 1000; i++)
-                {
-                    Example exmp = new()
-                    {
-                        X = rand.Next(100),
-                        Y = rand.Next(100),
-                        ExampleDate = DateTime.Now
-                    };
-                    await context.Examples.AddAsync(exmp);
-                }
-                await context.SaveChangesAsync();
+                //Random rand = new();
+                //for (int i = 0; i <= 1000; i++)
+                //{
+                //    Example exmp = new()
+                //    {
+                //        X = rand.Next(100),
+                //        Y = rand.Next(100),
+                //        ExampleDate = DateTime.Now
+                //    };
+                //    await context.Examples.AddAsync(exmp);
+                //}
+                //await context.SaveChangesAsync();
 
                 //ApplyConfiguration - edilen konfiqurasiyalari tetbiq edir
 
@@ -257,7 +257,29 @@ namespace EfCoreShadowProperties
                 //yuxaridaki yazdiqlarimiz best practice ucun tovsiyye olunur
                 //CUNKI SINGLE RESPONSIBLE A DA UYGUNDUR
 
+                //====================================
+                //Seed Data ozelligi -hazir datalarla birlikde db nin formalasdrirlimasi ucundur
+                //meselen: default deyerin verilmesi de seed datadir
 
+                //Data Seeding asagidaki hallarda onemlidir:
+                //Test ucun data lazimdirsa
+                //asp.net core identity konf.daki kimi static deyerler de tutulabiler
+                //proqramlasdirma ucun temel konf. deyerler ucun
+
+                //seed data elave etmek
+
+                //tutaq ki Blog uzerinden Seed Data elave edirik(OnModelCreating icinde)
+                //HasData() - bu metod sayesinde icra edirik
+
+                //Seed Data da pk ler manuel olaraq verilmelidir mutleq
+                //bunu vermesen mutleq xeta verecek
+
+                //!!!!!!!!
+                //her hansi pk i deyismek istesek eger evvelki migrationlar qalibsa onlara baxacq ve cascade ederek ona uygun diger tabledaki datalari da silecek, ama eger butun migrationlari silmisikse, onda ise xeta verecek, cunki neye uygun sileceyini bilmeyecek
+
+                //amma dependant table uzerinde istediyini deyise bilersen, ona uygun update edecek digerini de
+
+                //SEED DATALAR YALNIZCA MIGRATION ZAMANI GEREKLIDIR
             }
             //****************************
             //executig stopped
@@ -305,7 +327,6 @@ namespace EfCoreShadowProperties
         //HasComputedColumn
         public class Example
         {
-
             //bu numune ile pk ile identityni ayiririq, ama cox ist. olunmur
             [Key]
             //[DatabaseGenerated(DatabaseGeneratedOption.None)]
@@ -382,7 +403,6 @@ namespace EfCoreShadowProperties
             public DateTime CreatedDate { get; set; }
 
         }
-
 
         //1 to n
         public class Blog
@@ -570,23 +590,39 @@ namespace EfCoreShadowProperties
 
                 //------------------------------------------------------
                 //1 to many
-                modelBuilder.Entity<Blog>()
-                .HasMany(b => b.Posts)   // One Blog has many Posts
-                .WithOne(p => p.Blog)    // Each Post belongs to one Blog
-                .HasForeignKey(p => p.BlogId)
-                .OnDelete(DeleteBehavior.Cascade);
+                //modelBuilder.Entity<Blog>()
+                //.HasMany(b => b.Posts)   // One Blog has many Posts
+                //.WithOne(p => p.Blog)    // Each Post belongs to one Blog
+                //.HasForeignKey(p => p.BlogId)
+                //.OnDelete(DeleteBehavior.Cascade);
 
-                modelBuilder.Entity<Blog>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+                //modelBuilder.Entity<Blog>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
 
+                //modelBuilder.Entity<Post>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+
+                //Seed Data
+                modelBuilder.Entity<Blog>()
+                    .HasData(
+                        new Blog() { BlogId = 3, CreatedDate = DateTime.Now, Title = "Quantum" },
+                        new Blog() { BlogId = 2, CreatedDate = DateTime.Now, Title = "Evolution" }
+                    );
+                //Seed Data da pk ler manuel olaraq verilmelidir mutleq
                 modelBuilder.Entity<Post>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+                    .HasData(
+                        new Post() { PostId = 8, BlogId = 2,Content = "Islam and evolution", CreatedDate = DateTime.Now },
+                        new Post() { PostId = 2, BlogId = 1,Content = "Schrodinger's cat", CreatedDate = DateTime.Now }
+                    );
+                //her hansi pk i deyismek istesek eger evvelki migrationlar qalibsa onlara baxacq ve cascade ederek ona uygun diger tabledaki datalari da silecek, ama eger butun migrationlari silmisikse, onda ise xeta verecek, cunki neye uygun sileceyini bilmeyecek
+                
+                //seed datalar ancaq migration zamani lazim olur
 
 
                 //------------------------------------------------------

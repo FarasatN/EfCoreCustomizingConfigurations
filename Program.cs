@@ -280,6 +280,30 @@ namespace EfCoreShadowProperties
                 //amma dependant table uzerinde istediyini deyise bilersen, ona uygun update edecek digerini de
 
                 //SEED DATALAR YALNIZCA MIGRATION ZAMANI GEREKLIDIR
+
+                //====================================
+                //Entity inheritance
+
+                //var querySql = context.Database.ExecuteSql($"select * from Examples");
+                //Console.WriteLine(querySql.ToString());
+
+                //1. Table Per Hierarchy (TPH) - burda hersye tek classin icinde olur ve, "DISCRIMINATOR" ile ayrilir
+                //tutaq ki bizim classlarimiz var: Person, Employee, Customer, Technician
+                //ve bunlar arasinda: Person<-Customer && Employee<-Technician elaqesi var
+                //ve butun columnlar bir class icinde olacaqlar
+                //Persons{Person(Id,Name, Surname), Discriminator, Customer(CompanyName), Employee(Department), Technician(Branch)}
+
+                //2. Table Per Type (TPT) - burda her birini ayrica yaradacaq entitylerinve ust base e baglayacaq
+                //nisbeten cox az istifade olunur
+                
+                //3. Table Per Concrete Type (TPC) -  Ef Core 7 ile gelib
+                //yuxaridakilarda base classlar abstract ola bilerdi, burda ise direkt abstract olur
+                //ferqi odur ki:
+                //TPT de her type e uygun entity, burda ise concrete type e entity olacaq, abstract olana table olmayacaq
+                //Base Clasdaki/abstract clasdaki columnlar hamisinda olacaq, amma hamsina aid olacaq
+
+
+
             }
             //****************************
             //executig stopped

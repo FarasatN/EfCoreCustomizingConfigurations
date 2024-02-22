@@ -295,7 +295,7 @@ namespace EfCoreShadowProperties
 
                 //2. Table Per Type (TPT) - burda her birini ayrica yaradacaq entitylerinve ust base e baglayacaq
                 //nisbeten cox az istifade olunur
-                
+
                 //3. Table Per Concrete Type (TPC) -  Ef Core 7 ile gelib
                 //yuxaridakilarda base classlar abstract ola bilerdi, burda ise direkt abstract olur
                 //ferqi odur ki:
@@ -303,6 +303,45 @@ namespace EfCoreShadowProperties
                 //Base Clasdaki/abstract clasdaki columnlar hamisinda olacaq, amma hamsina aid olacaq
 
 
+                //TPH (with discriminator)
+                //eyni columnlarin oldugu entityleri discriminatorla ayiririq
+                //EF CORE DEFAULT OLARAQ BUNU TETBIQ EDIR,yeni elave konf. ehtiyca yoxdur
+
+                //tph de nullable olmalidir ki columnlar, bezilerinde olmasa data xeta vermesin, tekce pk den basqa
+                //ve discriminatordan basqa
+
+                //base classi abstract da ede bilerik
+
+                //Discriminator nedir - ef core terefinden avtomatik table a yerlestirilir,
+                //default olaraq icerisinde entity name lerini saxlayir
+                //bu columunu istenilen kimi customize etmek mumkundur
+
+                //meselen: discriminatorun adini deyismek ucun fluent api de konf. edilir
+
+                //var emp1 = new Employee() { Name = "Farasat", Surname = "Novruzov",Department="IT" };
+                //var emp2 = new Employee() { Name = "Magsad", Surname = "Novruzov",Department="IT" };
+                //var cus1 = new Customer() { Name = "X", Surname = "XX",CompanyName="XXXXX" };
+                //var cus2 = new Customer() { Name = "XY", Surname = "XXYY",CompanyName="XXXYYY" };
+                //var tec1 = new Technician() { Name = "XYZ", Surname = "XXYYZZ",Branch="XXXYYYZZZ" };
+
+                //Employee? empl = await context.Employees.FindAsync(2);
+                //context.Employees.Remove(empl);
+
+                //update de sade qaydada olacaq
+
+                //await context.Employees.AddRangeAsync(emp1);
+                //await context.Employees.AddRangeAsync(emp2);
+                //await context.Customers.AddRangeAsync(cus1);
+                //await context.Customers.AddRangeAsync(cus2);
+                //await context.Technicians.AddRangeAsync(tec1);
+                //await context.SaveChangesAsync();
+
+                //TPH  3. NORMAL FORMA ZIDDIR!!
+
+                //TPH NIN ISTIFADE YERLERI: ECOMMERCE APPDA YAZDIGIMIZ KIMI, FERQLI FERQLI FILE TIPLERINI SAXLAMAQ UCUN BU COX YARARLIDIR
+                //FILES(Id,FileName,Path, Storage, Discriminator, Price, Showcase, CreatedDate)
+
+                //SORGULAMA ZAMANI, EGER UST SINIF CAGIRIIBSA, ALTDAKILAR DA GELECEK, AMMA ALT SINIFDE ISE ANCAQ OZU GELECEK
 
             }
             //****************************
@@ -313,120 +352,142 @@ namespace EfCoreShadowProperties
             Console.ResetColor();
         }
 
+        //tph, tpt, tpc
+
+        //base class abstract yaxud concrete ola biler
+        abstract public class Person
+        {
+            public int Id { get; set; }
+            public string? Name { get; set; }
+            public string? Surname { get; set; }
+
+        }
+        public class Employee: Person
+        {
+            public string? Department { get; set; }
+        }
+        public class Customer: Person
+        {
+            public string? CompanyName { get; set; }
+        }
+        public class Technician: Employee
+        {
+            public string? Branch { get; set; }
+        }
+
         //IEntityTypeConfiguration
-        public class ExampleConfiguration : IEntityTypeConfiguration<Example>
-        {
-            public void Configure(EntityTypeBuilder<Example> builder)
-            {
-                builder.HasKey(ex => ex.Id);
-                builder.Property(ex => ex.X).IsRequired().HasMaxLength(7);
-                builder.Property(ex => ex.Computed)
-                    .HasComputedColumnSql("[X]+[Y]");
-                builder.Property(e => e.ExampleCode)
-                    .HasDefaultValueSql("NEWID()");
-                //.HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
-                //builder.Property(ex => ex.ExampleDate)
-                //    .HasDefaultValueSql("GETDATE()");
-                builder.Property(ex => ex.ExampleDate)
-                .HasColumnType("datetime2(7)"); // Use datetime2 for better precision
-                //.HasPrecision(3);
-            }
-        }
+        //public class ExampleConfiguration : IEntityTypeConfiguration<Example>
+        //{
+        //    public void Configure(EntityTypeBuilder<Example> builder)
+        //    {
+        //        builder.HasKey(ex => ex.Id);
+        //        builder.Property(ex => ex.X).IsRequired().HasMaxLength(7);
+        //        builder.Property(ex => ex.Computed)
+        //            .HasComputedColumnSql("[X]+[Y]");
+        //        builder.Property(e => e.ExampleCode)
+        //            .HasDefaultValueSql("NEWID()");
+        //        //.HasAnnotation("SqlServer:ValueGenerationStrategy", SqlServerValueGenerationStrategy.IdentityColumn);
+        //        //builder.Property(ex => ex.ExampleDate)
+        //        //    .HasDefaultValueSql("GETDATE()");
+        //        builder.Property(ex => ex.ExampleDate)
+        //        .HasColumnType("datetime2(7)"); // Use datetime2 for better precision
+        //        //.HasPrecision(3);
+        //    }
+        //}
 
-        //HasDiscriminator
-        public class MyEntity
-        {
-            public int Id { get; set; }
-            public string X { get; set; }
-        }
-        public class A : MyEntity
-        {
-            public int Y { get; set; }
-        }
-        public class B : MyEntity
-        {
-            public int Z { get; set; }
-        }
+        ////HasDiscriminator
+        //public class MyEntity
+        //{
+        //    public int Id { get; set; }
+        //    public string X { get; set; }
+        //}
+        //public class A : MyEntity
+        //{
+        //    public int Y { get; set; }
+        //}
+        //public class B : MyEntity
+        //{
+        //    public int Z { get; set; }
+        //}
 
-        //HasComputedColumn
-        public class Example
-        {
-            //bu numune ile pk ile identityni ayiririq, ama cox ist. olunmur
-            [Key]
-            //[DatabaseGenerated(DatabaseGeneratedOption.None)]
-            public int Id { get; set; }
+        ////HasComputedColumn
+        //public class Example
+        //{
+        //    //bu numune ile pk ile identityni ayiririq, ama cox ist. olunmur
+        //    [Key]
+        //    //[DatabaseGenerated(DatabaseGeneratedOption.None)]
+        //    public int Id { get; set; }
 
-            [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-            //ya da fluent api ile bunu etmek olar
-            //public int ExampleCode { get; set; }
-            public Guid ExampleCode { get; set; }
+        //    [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        //    //ya da fluent api ile bunu etmek olar
+        //    //public int ExampleCode { get; set; }
+        //    public Guid ExampleCode { get; set; }
 
-            public int X { get; set; }
-            public int Y { get; set; }
-            public int Computed { get; set; }
+        //    public int X { get; set; }
+        //    public int Y { get; set; }
+        //    public int Computed { get; set; }
 
-            public DateTime ExampleDate { get; set; }
-        }
+        //    public DateTime ExampleDate { get; set; }
+        //}
 
 
         //1 to 1
         //[Table("People")] //with data annotaions
-        public class Person
-        {
-            //[Key]
-            //public int Id { get; set; }
+        //public class Person
+        //{
+        //    //[Key]
+        //    //public int Id { get; set; }
 
-            //[Column("ID",TypeName = "string", Order = 3)]
-            [Key]
-            public int PersonId { get; set; }
-            //for composite key
-            [Key]
-            public int PersonId2 { get; set; }
+        //    //[Column("ID",TypeName = "string", Order = 3)]
+        //    [Key]
+        //    public int PersonId { get; set; }
+        //    //for composite key
+        //    [Key]
+        //    public int PersonId2 { get; set; }
 
-            //[ConcurrencyCheck]
-            //public int ConcurrencyCheck { get; set; }
+        //    //[ConcurrencyCheck]
+        //    //public int ConcurrencyCheck { get; set; }
 
-            //[NotMapped]
-            //public string FirstName { get; set; }
-            public string name;
-            public string Name { get=>name; set=>name=value; }
+        //    //[NotMapped]
+        //    //public string FirstName { get; set; }
+        //    public string name;
+        //    public string Name { get=>name; set=>name=value; }
 
-            //[Required]
-            [MaxLength(13)]
-            public string? Surname { get; set; }
+        //    //[Required]
+        //    [MaxLength(13)]
+        //    public string? Surname { get; set; }
 
-            //[Precision(3,2)]
-            public double Salary { get;set; }
+        //    //[Precision(3,2)]
+        //    public double Salary { get;set; }
 
-            // Navigation property for one-to-one relationship
-            public Address Address { get; set; }
+        //    // Navigation property for one-to-one relationship
+        //    public Address Address { get; set; }
 
-            //[Timestamp] - ya da fluent api ile
-            //public byte[] RowVersion { get; set; }
+        //    //[Timestamp] - ya da fluent api ile
+        //    //public byte[] RowVersion { get; set; }
 
-            [Comment("bu yaradilacaq obyektin tarixini ozunde tutur")]
-            public DateTime CreatedDate { get; set; }
-        }
-        public class Address
-        {
-            public int AddressId { get; set; }
-            public string Street { get; set; }
-            public string City { get; set; }
+        //    [Comment("bu yaradilacaq obyektin tarixini ozunde tutur")]
+        //    public DateTime CreatedDate { get; set; }
+        //}
+        //public class Address
+        //{
+        //    public int AddressId { get; set; }
+        //    public string Street { get; set; }
+        //    public string City { get; set; }
 
-            // Navigation property for one-to-one relationship
-            public Person Person { get; set; }
+        //    // Navigation property for one-to-one relationship
+        //    public Person Person { get; set; }
 
-            //[ForeignKey("test")]
-            //public int test { get; set; }
-            //[Key]
-            public int PersonId { get; set; }
-            //for composite key
-            //[Key]
-            public int PersonId2 { get; set; }
+        //    //[ForeignKey("test")]
+        //    //public int test { get; set; }
+        //    //[Key]
+        //    public int PersonId { get; set; }
+        //    //for composite key
+        //    //[Key]
+        //    public int PersonId2 { get; set; }
 
-            public DateTime CreatedDate { get; set; }
-
-        }
+        //    public DateTime CreatedDate { get; set; }
+        //}
 
         //1 to n
         public class Blog
@@ -503,17 +564,17 @@ namespace EfCoreShadowProperties
                 //.HasForeignKey<Address>(a => a.PersonId)
                 //.OnDelete(DeleteBehavior.Cascade);
 
-                modelBuilder.Entity<Person>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+                //modelBuilder.Entity<Person>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
 
-                modelBuilder.Entity<Address>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+                //modelBuilder.Entity<Address>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
 
 
                 //ToTable with Fluent API
@@ -566,14 +627,14 @@ namespace EfCoreShadowProperties
                 //modelBuilder.Entity<Person>()
                 //    .HasKey(p => new { p.PersonId, p.PersonId2 });
 
-                modelBuilder.Entity<Person>()
-                .HasKey(p => new { p.PersonId, p.PersonId2 });
-                modelBuilder.Entity<Address>()
-                    .HasKey(a => new { a.PersonId, a.PersonId2, a.AddressId });
-                modelBuilder.Entity<Person>()
-                    .HasOne(p => p.Address)
-                    .WithOne(a => a.Person)
-                    .HasForeignKey<Address>(ap => new { ap.PersonId, ap.PersonId2 });
+                //modelBuilder.Entity<Person>()
+                //.HasKey(p => new { p.PersonId, p.PersonId2 });
+                //modelBuilder.Entity<Address>()
+                //    .HasKey(a => new { a.PersonId, a.PersonId2, a.AddressId });
+                //modelBuilder.Entity<Person>()
+                //    .HasOne(p => p.Address)
+                //    .WithOne(a => a.Person)
+                //    .HasForeignKey<Address>(ap => new { ap.PersonId, ap.PersonId2 });
 
                 //HasDefaultSchema
                 //modelBuilder.HasDefaultSchema("test");
@@ -592,16 +653,16 @@ namespace EfCoreShadowProperties
                 //modelBuilder.Entity<Person>()
                 //.HasData(new Person(new Address());
 
-                modelBuilder.Entity<MyEntity>()
-                //.HasDiscriminator<string>("Ayirici");
-                .HasDiscriminator<int>("Ayirici")
-                .HasValue<A>(1)
-                .HasValue<B>(2)
-                .HasValue<MyEntity>(3);
+                //modelBuilder.Entity<MyEntity>()
+                ////.HasDiscriminator<string>("Ayirici");
+                //.HasDiscriminator<int>("Ayirici")
+                //.HasValue<A>(1)
+                //.HasValue<B>(2)
+                //.HasValue<MyEntity>(3);
 
-                modelBuilder.Entity<Person>()
-                    .Property(p => p.Name)
-                    .HasField(nameof(Person.name));
+                //modelBuilder.Entity<Person>()
+                //    .Property(p => p.Name)
+                //    .HasField(nameof(Person.name));
 
                 //HasIndex
                 //modelBuilder.Entity<Person>()
@@ -633,17 +694,17 @@ namespace EfCoreShadowProperties
                 //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
 
                 //Seed Data
-                modelBuilder.Entity<Blog>()
-                    .HasData(
-                        new Blog() { BlogId = 3, CreatedDate = DateTime.Now, Title = "Quantum" },
-                        new Blog() { BlogId = 2, CreatedDate = DateTime.Now, Title = "Evolution" }
-                    );
-                //Seed Data da pk ler manuel olaraq verilmelidir mutleq
-                modelBuilder.Entity<Post>()
-                    .HasData(
-                        new Post() { PostId = 8, BlogId = 2,Content = "Islam and evolution", CreatedDate = DateTime.Now },
-                        new Post() { PostId = 2, BlogId = 1,Content = "Schrodinger's cat", CreatedDate = DateTime.Now }
-                    );
+                //modelBuilder.Entity<Blog>()
+                //    .HasData(
+                //        new Blog() { BlogId = 3, CreatedDate = DateTime.Now, Title = "Quantum" },
+                //        new Blog() { BlogId = 2, CreatedDate = DateTime.Now, Title = "Evolution" }
+                //    );
+                ////Seed Data da pk ler manuel olaraq verilmelidir mutleq
+                //modelBuilder.Entity<Post>()
+                //    .HasData(
+                //        new Post() { PostId = 8, BlogId = 2,Content = "Islam and evolution", CreatedDate = DateTime.Now },
+                //        new Post() { PostId = 2, BlogId = 1,Content = "Schrodinger's cat", CreatedDate = DateTime.Now }
+                //    );
                 //her hansi pk i deyismek istesek eger evvelki migrationlar qalibsa onlara baxacq ve cascade ederek ona uygun diger tabledaki datalari da silecek, ama eger butun migrationlari silmisikse, onda ise xeta verecek, cunki neye uygun sileceyini bilmeyecek
                 
                 //seed datalar ancaq migration zamani lazim olur
@@ -651,40 +712,40 @@ namespace EfCoreShadowProperties
 
                 //------------------------------------------------------
                 //many to many
-                modelBuilder.Entity<BookAuthor>()
-                .HasKey(ba => new { ba.BookId, ba.AuthorId });
+                //modelBuilder.Entity<BookAuthor>()
+                //.HasKey(ba => new { ba.BookId, ba.AuthorId });
 
-                modelBuilder.Entity<BookAuthor>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
-
-
-                modelBuilder.Entity<BookAuthor>()
-                    .HasOne(ba => ba.Book)
-                    .WithMany(b => b.BookAuthors)
-                    .HasForeignKey(ba => ba.BookId)
-                    .OnDelete(DeleteBehavior.Cascade);
-
-                modelBuilder.Entity<Book>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+                //modelBuilder.Entity<BookAuthor>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
 
 
-                modelBuilder.Entity<BookAuthor>()
-                    .HasOne(ba => ba.Author)
-                    .WithMany(a => a.BookAuthors)
-                    .HasForeignKey(ba => ba.AuthorId)
-                    .OnDelete(DeleteBehavior.Cascade);
+                //modelBuilder.Entity<BookAuthor>()
+                //    .HasOne(ba => ba.Book)
+                //    .WithMany(b => b.BookAuthors)
+                //    .HasForeignKey(ba => ba.BookId)
+                //    .OnDelete(DeleteBehavior.Cascade);
 
-                modelBuilder.Entity<Author>()
-                .Property(e => e.CreatedDate)
-                .HasColumnName("CreatedDate")  // Optional: Set the column name
-                .HasColumnType("datetime")     // Optional: Set the column data type
-                .HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+                //modelBuilder.Entity<Book>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
+
+
+                //modelBuilder.Entity<BookAuthor>()
+                //    .HasOne(ba => ba.Author)
+                //    .WithMany(a => a.BookAuthors)
+                //    .HasForeignKey(ba => ba.AuthorId)
+                //    .OnDelete(DeleteBehavior.Cascade);
+
+                //modelBuilder.Entity<Author>()
+                //.Property(e => e.CreatedDate)
+                //.HasColumnName("CreatedDate")  // Optional: Set the column name
+                //.HasColumnType("datetime")     // Optional: Set the column data type
+                //.HasDefaultValueSql("GETDATE()");  // Optional: Set a default value using SQL Server syntax
 
                 //-----------------------------------------
 
@@ -729,6 +790,16 @@ namespace EfCoreShadowProperties
                 //    Console.WriteLine(entity.Name);
                 //}
 
+                //==================================
+                //discriminator
+                //modelBuilder.Entity<Person>()
+                //    .HasDiscriminator<int>("ayirici")//eger ada gore yox, int deyere gore ayrimaq isteyirsense
+                //    .HasValue<Person>(1)
+                //    .HasValue<Employee>(2)
+                //    .HasValue<Customer>(3)
+                //    .HasValue<Technician>(4);
+                    //yaxud string edib, ferqli ad vere bilirik ve s.
+                    
 
                 base.OnModelCreating(modelBuilder);
 
@@ -747,17 +818,21 @@ namespace EfCoreShadowProperties
                 optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
             }
 
+            //public DbSet<Person> Persons { get; set; }
+            //public DbSet<Address> Addresses { get; set; }
+            //public DbSet<Blog> Blogs { get; set; }
+            //public DbSet<Post> Posts { get; set; }
+            //public DbSet<Book> Books { get; set; }
+            //public DbSet<Author> Authors { get; set; }
+            //public DbSet<BookAuthor> BookAuthors { get; set; }
+            //public DbSet<Example> Examples { get; set; }
+            //public DbSet<A> As { get; set; }
+            //public DbSet<B> Bs { get; set; }
+            //public DbSet<MyEntity> MyEntities { get; set; }
             public DbSet<Person> Persons { get; set; }
-            public DbSet<Address> Addresses { get; set; }
-            public DbSet<Blog> Blogs { get; set; }
-            public DbSet<Post> Posts { get; set; }
-            public DbSet<Book> Books { get; set; }
-            public DbSet<Author> Authors { get; set; }
-            public DbSet<BookAuthor> BookAuthors { get; set; }
-            public DbSet<Example> Examples { get; set; }
-            public DbSet<A> As { get; set; }
-            public DbSet<B> Bs { get; set; }
-            public DbSet<MyEntity> MyEntities { get; set; }
+            public DbSet<Employee> Employees { get; set; }
+            public DbSet<Customer> Customers { get; set; }
+            public DbSet<Technician> Technicians { get; set; }
         }
 
     }

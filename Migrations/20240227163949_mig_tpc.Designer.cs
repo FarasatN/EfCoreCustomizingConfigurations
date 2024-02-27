@@ -11,8 +11,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    [Migration("20240222141950_mig_tph")]
-    partial class mig_tph
+    [Migration("20240227163949_mig_tpc")]
+    partial class mig_tpc
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,18 +24,16 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.HasSequence("PersonSequence");
+
             modelBuilder.Entity("EfCoreShadowProperties.Program+Person", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("NEXT VALUE FOR [PersonSequence]");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Discriminator")
-                        .IsRequired()
-                        .HasMaxLength(13)
-                        .HasColumnType("nvarchar(13)");
+                    SqlServerPropertyBuilderExtensions.UseSequence(b.Property<int>("Id"));
 
                     b.Property<string>("Name")
                         .HasColumnType("nvarchar(max)");
@@ -45,11 +43,9 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("Persons");
+                    b.ToTable((string)null);
 
-                    b.HasDiscriminator<string>("Discriminator").HasValue("Person");
-
-                    b.UseTphMappingStrategy();
+                    b.UseTpcMappingStrategy();
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Customer", b =>
@@ -59,7 +55,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<string>("CompanyName")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasDiscriminator().HasValue("Customer");
+                    b.ToTable("Customers");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Employee", b =>
@@ -69,7 +65,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<string>("Department")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasDiscriminator().HasValue("Employee");
+                    b.ToTable("Employees");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Technician", b =>
@@ -79,7 +75,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<string>("Branch")
                         .HasColumnType("nvarchar(max)");
 
-                    b.HasDiscriminator().HasValue("Technician");
+                    b.ToTable("Technicians");
                 });
 #pragma warning restore 612, 618
         }

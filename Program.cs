@@ -343,6 +343,46 @@ namespace EfCoreShadowProperties
 
                 //SORGULAMA ZAMANI, EGER UST SINIF CAGIRIIBSA, ALTDAKILAR DA GELECEK, AMMA ALT SINIFDE ISE ANCAQ OZU GELECEK
 
+
+                //---------
+                //TPT - her entity ye bir classda olur ve hiyerarxiye uygun elaqelendirir bunu
+                //bu da cox istifade olunmur, demek olar gormeyeceksen
+
+                //Technician? tec = new() { Name = "Farasat", Surname = "Novruzov", Department = "IT", Branch = "Back End" };
+
+                //Customer? cust = new()
+                //{
+                //    Name = "Mardan",
+                //    Surname = "Novruzov",
+                //    CompanyName = "MN",
+                //};
+
+                //Customer? cust = await context.Customers.FindAsync(2);
+                //Person? pers = await context.Persons.FindAsync(3);
+                //Technician? tec = await context.Technicians.FindAsync(1);
+                //botov elaqeli oldugu datani getirecek
+                //tec.Name = "Maqsad";
+                //await context.Customers.AddAsync(cust);
+                //context.Persons.Remove(pers);
+                //var a  = pers;
+                //await context.SaveChangesAsync();
+
+                //Mentiq olaraq Efcore da demek olar istifade olunmur
+
+                //EGER PERFORMANCE ESAS KRITERIYADIRSA, O ZAMAN TPH,
+                //NORMALIZASIYA QAYDALARINA UYGUN ISE TPt
+
+                //TPC - ancaq concrete classlarin table i yaranacaq, yeni abstract in table i olmayacaq
+                //evveline nisbeten join sayi azaldigi ucun, performans artacaq
+                //tpc - de personun clumnlari her concrete classda ayrica eks olunacaq
+                
+                //add, update, delete - evvelkilerle oxsardir
+                //await context.Technicians.AddAsync(new() { Name = "Farasat", Surname = "Novruzov", Branch = "Development",Department = "IT" });
+                //await context.Technicians.AddAsync(new() { Name = "Magsad", Surname = "Novruzov", Branch = "Development",Department = "IT" });
+                //await context.Technicians.AddAsync(new() { Name = "Mardan", Surname = "Novruzov", Branch = "Development",Department = "IT" });
+                //await context.SaveChangesAsync();
+
+                //delete, update de eyni qaydada
             }
             //****************************
             //executig stopped
@@ -372,6 +412,11 @@ namespace EfCoreShadowProperties
         }
         public class Technician: Employee
         {
+            //C# 12 - new primary constructor feature
+            //public Technician(string name = "IT Technician")
+            //{
+            //    Console.WriteLine(name);
+            //}
             public string? Branch { get; set; }
         }
 
@@ -798,8 +843,25 @@ namespace EfCoreShadowProperties
                 //    .HasValue<Employee>(2)
                 //    .HasValue<Customer>(3)
                 //    .HasValue<Technician>(4);
-                    //yaxud string edib, ferqli ad vere bilirik ve s.
-                    
+                //yaxud string edib, ferqli ad vere bilirik ve s.
+
+                //--------
+                //TPT
+                //ToTable ile konf. edilir
+
+                //modelBuilder.Entity<Person>().ToTable(nameof(Persons));
+                //modelBuilder.Entity<Employee>().ToTable(nameof(Employees));
+                //modelBuilder.Entity<Customer>().ToTable(nameof(Customers));
+                //modelBuilder.Entity<Technician>().ToTable(nameof(Technicians));
+
+                //modelBuilder.Entity<Person>().UseTphMappingStrategy();
+
+
+                //TPC
+                //UseTpcMappingStrategy - bu funksiya ile tph kimi de konf. etmek mumkundur
+                modelBuilder.Entity<Person>().UseTpcMappingStrategy();
+
+
 
                 base.OnModelCreating(modelBuilder);
 

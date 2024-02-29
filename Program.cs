@@ -885,6 +885,7 @@ namespace EfCoreShadowProperties
                 //UseTpcMappingStrategy - bu funksiya ile tph kimi de konf. etmek mumkundur
                 modelBuilder.Entity<Person>().UseTpcMappingStrategy();
 
+                //============================
                 //PK
 
                 //Alternate Key
@@ -906,15 +907,32 @@ namespace EfCoreShadowProperties
                 //Shadow Properties - eslinde olmayana column uzerinden baglayir
 
                 //HasConstraintName
-                modelBuilder.Entity<Blog>()
-                    .Property<int>("BlogForeignKeydId");
+                //modelBuilder.Entity<Blog>()
+                //    .Property<int>("BlogForeignKeydId");
 
-                modelBuilder.Entity<Blog>()
-                    .HasMany(b => b.Posts)
-                    .WithOne(b => b.Blog)
-                    //.HasForeignKey(p => new { p.BlogId, p.Content });
-                    .HasForeignKey("BlogForeignKeyId")
-                    .HasConstraintName("exampleforeignkey");
+                //modelBuilder.Entity<Blog>()
+                //    .HasMany(b => b.Posts)
+                //    .WithOne(b => b.Blog)
+                //    //.HasForeignKey(p => new { p.BlogId, p.Content });
+                //    .HasForeignKey("BlogForeignKeyId")
+                //    .HasConstraintName("exampleforeignkey");
+
+                //Unique Key Constraint
+                //modelBuilder.Entity<Blog>()
+                //    .HasIndex(b => b.CreatedDate)
+                //    .IsUnique();
+
+                //ya da Alternate Key ile
+                //modelBuilder.Entity<Blog>()
+                //    .HasAlternateKey(b => b.CreatedDate);
+
+                //Check Constraint - custom constraints (eger ozumuz sert yaratmaq isteyirikse)
+                //Meselen, eger A ve B columnlarimiz varsa ve ancaq A Bden boyukse deyer qebul etsin desek
+                //onda check constraint yaradiqiriq
+
+                //modelBuilder.Entity<Blog>()
+                //    .HasCheckConstraint("a_b_check_constraint", "[A] > [B]");
+
 
 
                 base.OnModelCreating(modelBuilder);

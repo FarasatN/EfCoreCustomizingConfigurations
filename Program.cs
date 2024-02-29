@@ -383,6 +383,26 @@ namespace EfCoreShadowProperties
                 //await context.SaveChangesAsync();
 
                 //delete, update de eyni qaydada
+
+                //=================================
+                //Constraints - columuna olan mehdudiyyet ve sertler
+
+                //Primary Key - HasKey/Key - Fluent API/Data Annotation
+
+                //Normalda eger classda Id, NameId ve s. olarsa, onu avtomatik PK edecek
+                //Yox, eger ferqli bir adda columnu PK etmek ucun ise, atrbibutlar ile isareleyirik
+
+                //Alternate Keys
+                //PK e elave olaraq alternative bir key yaradir
+
+                //Alternate key - db de unique keydir
+                //bununla unique composite key de yarada bilirik fluent api de
+
+                //PK in default name ini deyismek
+
+
+
+
             }
             //****************************
             //executig stopped
@@ -549,9 +569,13 @@ namespace EfCoreShadowProperties
         public class Post
         {
             public int PostId { get; set; }
+
+            //for composite keyor fluent api
+            //[ForeignKey(nameof(Blog))]
             public string Content { get; set; }
 
             // Foreign key property for one-to-many relationship
+            [ForeignKey(nameof(Blog))]
             public int BlogId { get; set; }//default conventionda bunu yazmaga ehtiyyac yoxdur, cunki bu shadow properties rolunu oynayir
 
             // Navigation property for one-to-many relationship
@@ -561,42 +585,42 @@ namespace EfCoreShadowProperties
 
         }
 
-        //n to n
-        public class Book
-        {
-            public int BookId { get; set; }
-            public string Title { get; set; }
+        ////n to n
+        //public class Book
+        //{
+        //    public int BookId { get; set; }
+        //    public string Title { get; set; }
 
-            // Navigation property for the many-to-many relationship
-            public ICollection<BookAuthor> BookAuthors { get; set; }
+        //    // Navigation property for the many-to-many relationship
+        //    public ICollection<BookAuthor> BookAuthors { get; set; }
 
-            public DateTime CreatedDate { get; set; }
+        //    public DateTime CreatedDate { get; set; }
 
-        }
-        public class Author
-        {
-            public int AuthorId { get; set; }
-            public string Name { get; set; }
+        //}
+        //public class Author
+        //{
+        //    public int AuthorId { get; set; }
+        //    public string Name { get; set; }
 
-            // Navigation property for the many-to-many relationship
-            public ICollection<BookAuthor> BookAuthors { get; set; }
+        //    // Navigation property for the many-to-many relationship
+        //    public ICollection<BookAuthor> BookAuthors { get; set; }
 
-            public DateTime CreatedDate { get; set; }
+        //    public DateTime CreatedDate { get; set; }
 
-        }
+        //}
 
-        // Join entity for the many-to-many relationship
-        public class BookAuthor
-        {
-            public int BookId { get; set; }
-            public Book Book { get; set; }
+        //// Join entity for the many-to-many relationship
+        //public class BookAuthor
+        //{
+        //    public int BookId { get; set; }
+        //    public Book Book { get; set; }
 
-            public int AuthorId { get; set; }
-            public Author Author { get; set; }
+        //    public int AuthorId { get; set; }
+        //    public Author Author { get; set; }
 
-            public DateTime CreatedDate { get; set; }
+        //    public DateTime CreatedDate { get; set; }
 
-        }
+        //}
 
         public class AppDbContext : DbContext
         {
@@ -825,7 +849,7 @@ namespace EfCoreShadowProperties
                 //modelBuilder.ApplyConfiguration(new ExampleConfiguration());
 
                 //ApplyConfigurationsFromAssembly
-                modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+                //modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
 
 
                 //GetEntityTypes - cox da aktiv ist. etmesek de, bilmek faydalidi
@@ -861,6 +885,36 @@ namespace EfCoreShadowProperties
                 //UseTpcMappingStrategy - bu funksiya ile tph kimi de konf. etmek mumkundur
                 modelBuilder.Entity<Person>().UseTpcMappingStrategy();
 
+                //PK
+
+                //Alternate Key
+                modelBuilder.Entity<Person>()
+                    .HasAlternateKey(b => b.Name);
+
+                //modelBuilder.Entity<Person>()
+                //    .HasAlternateKey(b => new {b.Name,b.Surname})
+                //    .HasName("Composite_Unique_Key");
+
+                //Foreign Key - ya fluent api, ya da data annotation ile
+                //modelBuilder.Entity<Blog>()
+                //    .HasMany(b=>b.Posts)
+                //    .WithOne(b=>b.Blog)
+                //    .HasForeignKey(p=>p.BlogId);
+
+                //Composite Foreign Key
+
+                //Shadow Properties - eslinde olmayana column uzerinden baglayir
+
+                //HasConstraintName
+                modelBuilder.Entity<Blog>()
+                    .Property<int>("BlogForeignKeydId");
+
+                modelBuilder.Entity<Blog>()
+                    .HasMany(b => b.Posts)
+                    .WithOne(b => b.Blog)
+                    //.HasForeignKey(p => new { p.BlogId, p.Content });
+                    .HasForeignKey("BlogForeignKeyId")
+                    .HasConstraintName("exampleforeignkey");
 
 
                 base.OnModelCreating(modelBuilder);

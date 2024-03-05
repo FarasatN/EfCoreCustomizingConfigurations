@@ -375,7 +375,7 @@ namespace EfCoreShadowProperties
                 //TPC - ancaq concrete classlarin table i yaranacaq, yeni abstract in table i olmayacaq
                 //evveline nisbeten join sayi azaldigi ucun, performans artacaq
                 //tpc - de personun clumnlari her concrete classda ayrica eks olunacaq
-                
+
                 //add, update, delete - evvelkilerle oxsardir
                 //await context.Technicians.AddAsync(new() { Name = "Farasat", Surname = "Novruzov", Branch = "Development",Department = "IT" });
                 //await context.Technicians.AddAsync(new() { Name = "Magsad", Surname = "Novruzov", Branch = "Development",Department = "IT" });
@@ -400,6 +400,45 @@ namespace EfCoreShadowProperties
 
                 //PK in default name ini deyismek
 
+                //qalanlari fluent apide ..
+
+                //====================================
+                //Indexes
+
+                //PK. FK ve AK avtomatik olaraq indekslenir
+
+                //Index/HasIndex ile icra olunur
+
+                //indeksleme odur ki, bu column uzerinden yalniz sorgularda daha suretli performance elde olunur
+                // context.Employees.Where(e => e.Name == "");//amma elave Surnamei de elave etsem mailyyeti artacaq
+                //bunun qarsisini almaq ucun composite etmek olar 2 sini
+
+                //Unique Indexes - constraint de elave edir ki, tekrar olmasin
+
+                //Index Sort Order - ef core 7-den sonra gelib
+                //AllDescending - ancaq bir property ucun
+                //IsDescending - ise bir metod icinde ferqli ferqli property ucun
+
+                //Index Filter - attributu yoxdur, ancaq fluent api dedi
+
+                //Included Columns - complex sorgularda, indexden kenar olanlari da bura elave edib performans qazanmaq ucun
+
+                //  BASDAN HER SEYI FLUENT APIDE YAZMAQ EN YAXSISIDIR
+
+
+                //===============================
+                //Sequence - db de benzersiz ve ardicil deyerler yaradan db obyektidir
+                //Sequence- herhansi bir table in ozelligi deyil, db obyektidir.Birden cox table terefinden ist. oluna biler
+
+                //HasSquence ile Fluent Api de konf. edilir
+                //modelBuilder.HasSequence("EC_Sequence");
+
+
+                //SEQUENCE - avtomatik artan deyerler yaradir
+                //Sequence - identityden daha suretli ve performancslidi, cunki diskden yox, ramdan alir
+                //Sequence - db obyektidir, identity ise table ozelliyi
+                //Sequence - herhansi table a bagli deyildir
+
 
 
 
@@ -415,6 +454,21 @@ namespace EfCoreShadowProperties
         //tph, tpt, tpc
 
         //base class abstract yaxud concrete ola biler
+        //indexing - class seviyyesinde ist. olunur, ya da fluent api ile
+        //[Index(nameof(Name))]
+        //Compossite Indexes
+        //[Index("Name","Surname")]
+
+        //[Index(nameof(Name))] //context.Person.Where(e=>e.Name=="..")   
+        //[Index(nameof(Surname))] //context.Person.Where(e=>e.Surname=="..") 
+        //[Index(nameof(Name),nameof(Surname))]//context.Person.Where(e=>e.Name==".." || e.Name=="..") 
+        //yuxaridaki her biri ayridir
+
+        ////Unique Index
+        //[Index(nameof(Name),IsUnique = true)]
+        ////
+        //[Index(nameof(Name), IsUnique = true,AllDescending = true)]
+        [Index(nameof(Name), nameof(Surname), IsDescending = new[] {true,false},Name = "MyIndex")]//in fluent api HasDatabaseName
         abstract public class Person
         {
             public int Id { get; set; }
@@ -889,8 +943,8 @@ namespace EfCoreShadowProperties
                 //PK
 
                 //Alternate Key
-                modelBuilder.Entity<Person>()
-                    .HasAlternateKey(b => b.Name);
+                //modelBuilder.Entity<Person>()
+                //    .HasAlternateKey(b => b.Name);
 
                 //modelBuilder.Entity<Person>()
                 //    .HasAlternateKey(b => new {b.Name,b.Surname})
@@ -933,6 +987,46 @@ namespace EfCoreShadowProperties
                 //modelBuilder.Entity<Blog>()
                 //    .HasCheckConstraint("a_b_check_constraint", "[A] > [B]");
 
+                //====================================
+
+                //indexing
+
+                //modelBuilder.Entity<Employee>()
+                //    .HasIndex(b => b.Department);
+                //indeksleme odur ki, bu column uzerinden yalniz sorgularda daha suretli performance var
+
+                //composite indexing
+
+                //modelBuilder.Entity<Person>()
+                //   .HasIndex(p => new { p.Name, p.Surname })
+                //   .IsUnique();
+
+                //HasFiltert
+                //modelBuilder.Entity<Employee>()
+                //    .HasIndex(e => e.Name)
+                //    .HasFilter("[NAME] IS NOT NULL");//boyuk datalarda performansda ferq edir
+
+                //Included Columns
+                //modelBuilder.Entity<Employee>()
+                //    .HasIndex(e => e.Name)
+                //    .IncludeProperties(e=>e.Department);
+
+                //==========================
+                //SEQUENCE - avtomatik artan deyerler yaradir
+                //Sequence - identityden daha suretli ve performancslidi, cunki diskden yox, ramdan alir
+                //Sequence - db obyektidir, identity ise table ozelliyi
+                //Sequence - herhansi table a bagli deyildir
+
+                modelBuilder.HasSequence("Ec_Sequence")
+                    .StartsAt(100)
+                    .IncrementsBy(5);
+
+                modelBuilder.Entity<Blog>()
+                    .Property(b => b.BlogId)
+                    .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
+                modelBuilder.Entity<Customer>()
+                    .Property(c => c.Id)
+                    .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
 
 
                 base.OnModelCreating(modelBuilder);

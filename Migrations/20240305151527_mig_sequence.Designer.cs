@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    [Migration("20240229122545_mig_foreign_key")]
-    partial class mig_foreign_key
+    [Migration("20240305151527_mig_sequence")]
+    partial class mig_sequence
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -25,18 +25,16 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.HasSequence("PersonSequence");
+            modelBuilder.HasSequence("Ec_Sequence")
+                .StartsAt(100L)
+                .IncrementsBy(5);
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Blog", b =>
                 {
                     b.Property<int>("BlogId")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("BlogId"));
-
-                    b.Property<int>("BlogForeignKeydId")
-                        .HasColumnType("int");
+                        .HasColumnType("int")
+                        .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
 
                     b.Property<DateTime>("CreatedDate")
                         .HasColumnType("datetime2");
@@ -55,20 +53,18 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("int")
-                        .HasDefaultValueSql("NEXT VALUE FOR [PersonSequence]");
-
-                    SqlServerPropertyBuilderExtensions.UseSequence(b.Property<int>("Id"));
+                        .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
 
                     b.Property<string>("Name")
-                        .IsRequired()
                         .HasColumnType("nvarchar(450)");
 
                     b.Property<string>("Surname")
-                        .HasColumnType("nvarchar(max)");
+                        .HasColumnType("nvarchar(450)");
 
                     b.HasKey("Id");
 
-                    b.HasAlternateKey("Name");
+                    b.HasIndex(new[] { "Name", "Surname" }, "MyIndex")
+                        .IsDescending(true, false);
 
                     b.ToTable((string)null);
 
@@ -83,9 +79,6 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PostId"));
 
-                    b.Property<int>("BlogForeignKeyId")
-                        .HasColumnType("int");
-
                     b.Property<int>("BlogId")
                         .HasColumnType("int");
 
@@ -98,7 +91,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     b.HasKey("PostId");
 
-                    b.HasIndex("BlogForeignKeyId");
+                    b.HasIndex("BlogId");
 
                     b.ToTable("Post");
                 });
@@ -137,10 +130,9 @@ namespace EfCoreCustomizingConfigurations.Migrations
                 {
                     b.HasOne("EfCoreShadowProperties.Program+Blog", "Blog")
                         .WithMany("Posts")
-                        .HasForeignKey("BlogForeignKeyId")
+                        .HasForeignKey("BlogId")
                         .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired()
-                        .HasConstraintName("exampleforeignkey");
+                        .IsRequired();
 
                     b.Navigation("Blog");
                 });

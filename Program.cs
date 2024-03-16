@@ -1,4 +1,5 @@
 ﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.Extensions.Internal;
@@ -7,6 +8,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Runtime.CompilerServices;
 using System.Security.Cryptography.X509Certificates;
 
 namespace EfCoreShadowProperties
@@ -442,6 +444,123 @@ namespace EfCoreShadowProperties
 
 
 
+                //===========================================================================
+                //===========================================================================
+                //Loading Datas
+
+                //Eager Loading - relational datalarin parca parca yuklenmesini iradeli sekilde teskil edir
+                //eager - yeni, istekli loading
+
+                //include ile tetbiq olunur, hisse hisse table lar birlesdirilir
+                //var employees = await context.Employees.ToListAsync();
+                //Console.WriteLine();
+                //normalda burda diger elaqeli tablelar olmur, cunki, hec neyi daxil etmemisik
+
+                //var employees1 = await context.Employees.Include("Orders").ToListAsync();// - bu tip esasen shadow propetiesde ist. olunur
+                //var employees2 = await context.Employees
+                //    .Where(e => e.Orders.Count() > 0)
+                //    .Include(e=>e.Orders)
+                //    .Include(e=>e.Region)
+                //    .ToListAsync();
+                //Console.WriteLine();
+                //Eager Loading arxa planda "uygun" joini tetbiq edir
+
+                //ThenInclude
+                //var orders = await context.Orders
+                //    //.Include(o => o.Employee)
+                //    .Include(o => o.Employee.Region)//anceq tek olan property uzerinden mumkundur
+                //    .ToListAsync();
+
+                //misal ucun asagidaki numunede bu mumkun deyil
+                //var regions = await context.Regions
+                //    .Include(r=>r.Employees)//single level
+                //    .ThenInclude(e=>e.Orders).ToListAsync();//multilevel 
+
+                //https://mertsoyer.com/ef-core-include-theninclude-nedir/
+                //yeni, 1 to many elaqesinde mutleq ThenInclude() olacaq
+
+
+                //Filtered Include - adindan gorunduyu kimi filterlenmis include neticesini getirir
+                //var regions = await context.Regions
+                //    .Include(r => r.Employees.Where(e=>e.Name.Contains("a"))
+                //    .OrderByDescending(e=>e.Name))
+                //    .ToListAsync();
+
+                //ChangeTraker olunmus datalarda Include dogru netice vermiye biler,yeni filterden kenarda qalanlar track olunacaq
+                //Buna gore de, change tracker olmamalidir, filter ederken
+
+
+                //Qeyd!!!
+                //Eager Loading heddinden artiq istifade olundugu ucun, xirda optimizasiyalar cox onemlidir
+                //Ef Core onceden yaradilmis vs execute edilerek in memory e getirilmis datalari sonraki islemlerde ist. edir
+                //misal ucun:
+                //var orders = await context.Orders.ToListAsync();
+                //var employees = await context.Employees.ToListAsync();
+                //employees icerisinde include etmesek de evvelki sorgudan qalma Orders ler de gelir yaddasdan
+                //yeni, her sorgunun neticesi in memory de qalir ve istifadeye hazirdir
+
+                //AutoInclude - cekilen datada mutleq sekilde include olacaqsa, ayri ayri qeyd etmekdense, bunu yaziriq
+                //merkezi formada
+
+                //IgnoreAutoIncludes - legv edir AutoInclude u
+
+                //Bir birinden innerit almis Entitylerde Include
+                //Cast, as, overload
+
+
+                //============================================
+                //Explicit Loading
+                //Eager kimi hamisini Include etmir, ehtiyaca gore edir, lazimsiz join olmur
+
+                //var employee = await context.Employees.Include(e => e.Orders).FirstOrDefaultAsync(e=>e.Id==5);
+                //Include maliyyetini azaltmaq ucun asag
+                //var employee = await context.Employees.Include(e => e.Orders).FirstOrDefaultAsync(e=>e.Id==5);
+                //if (employee.Name == "Farasat")
+                //{
+                //    var orders = await context.Orders.Where(o=>o.EmployeeId==employee.Id).ToListAsync();
+                //}
+
+                //Reference - collection olmayan tablelari sonradan sorguya join edir
+                //var empl = await context.Employees.FirstOrDefaultAsync(e => e.Id == 5);
+                //await context.Entry(empl).Reference(e => e.Region).LoadAsync();
+
+                //Collection -  referencin collection formasidir
+                ////var empl = await context.Employees.FirstOrDefaultAsync(e => e.Id == 6);
+                ////var count = await context.Entry(empl).Collection(e => e.Orders).Query().CountAsync();
+                ////var orders = await context.Entry(empl).Collection(e => e.Orders).Query().Where(q=>q.OrderDate.Day==DateTime.Now.Day).ToListAsync();
+                //birbasa burdan uzerinde aggregate isleri aparmaq olur, evvelki
+
+
+                //===============================
+                //Lazy Loading - ..
+                //Navigation property uzerinden emeliyyat aparan zaman elaqeli properti uzerinden qarsiliq gelen tablea uygun sorgunun yazilib execute edilmesidir
+
+                //var emp = await context.Employees.FindAsync(5);
+                //Console.WriteLine(emp.Region.Name); ;//normalda bu null excep. atacaq,
+                //amma bis bunu bildirsek ki lazy olacaq sekilde region ucun arxa planda sorgu yaratsin ve bazaya qosulsun, onda yox
+
+                //Proxy ile Lazy Loading - bizler en cox bunu proxyde istf edirik
+                //Amma tekce optionsBuilder ile is bitmir
+                //Navigatio propertiler virtual olmalidir, yoxsa xeta verecek
+
+                //ne vaxt istifade olunmalidir:
+                //https://stackoverflow.com/questions/31366236/lazy-loading-vs-eager-loading
+
+                //Proxyler butun platformlarda desteklenmeyebiler, buna gore de manuel olaraq lazy loaadingi tetbiq etmek gerekecek
+
+                //ILazyLoader interface-i
+                //Manuel loadingde virtuale ehtiyyac yoxdur
+                var employee = await context.Employees.FindAsync(1);
+
+                //Delegate ile Lazy Loading
+
+                //N+1 problemi - her dongu ucun ayrica sorgu yaradacaq, bu da cox maliyyetlidir
+                //Ona gore de lazy loadingden mumkun qeder uzaq durmaq lazimdir, xususile dongusel islerde
+
+
+
+                Console.WriteLine();
+
             }
             //****************************
             //executig stopped
@@ -468,31 +587,31 @@ namespace EfCoreShadowProperties
         //[Index(nameof(Name),IsUnique = true)]
         ////
         //[Index(nameof(Name), IsUnique = true,AllDescending = true)]
-        [Index(nameof(Name), nameof(Surname), IsDescending = new[] {true,false},Name = "MyIndex")]//in fluent api HasDatabaseName
-        abstract public class Person
-        {
-            public int Id { get; set; }
-            public string? Name { get; set; }
-            public string? Surname { get; set; }
+        //[Index(nameof(Name), nameof(Surname), IsDescending = new[] {true,false},Name = "MyIndex")]//in fluent api HasDatabaseName
+        //abstract public class Person
+        //{
+        //    public int Id { get; set; }
+        //    public string? Name { get; set; }
+        //    public string? Surname { get; set; }
 
-        }
-        public class Employee: Person
-        {
-            public string? Department { get; set; }
-        }
-        public class Customer: Person
-        {
-            public string? CompanyName { get; set; }
-        }
-        public class Technician: Employee
-        {
-            //C# 12 - new primary constructor feature
-            //public Technician(string name = "IT Technician")
-            //{
-            //    Console.WriteLine(name);
-            //}
-            public string? Branch { get; set; }
-        }
+        //}
+        //public class Employee: Person
+        //{
+        //    public string? Department { get; set; }
+        //}
+        //public class Customer: Person
+        //{
+        //    public string? CompanyName { get; set; }
+        //}
+        //public class Technician: Employee
+        //{
+        //    //C# 12 - new primary constructor feature
+        //    //public Technician(string name = "IT Technician")
+        //    //{
+        //    //    Console.WriteLine(name);
+        //    //}
+        //    public string? Branch { get; set; }
+        //}
 
         //IEntityTypeConfiguration
         //public class ExampleConfiguration : IEntityTypeConfiguration<Example>
@@ -609,35 +728,35 @@ namespace EfCoreShadowProperties
         //}
 
         //1 to n
-        public class Blog
-        {
-            public int BlogId { get; set; }
-            public string Title { get; set; }
+        //public class Blog
+        //{
+        //    public int BlogId { get; set; }
+        //    public string Title { get; set; }
 
-            // Navigation property for one-to-many relationship
-            public ICollection<Post> Posts { get; set; }
+        //    // Navigation property for one-to-many relationship
+        //    public ICollection<Post> Posts { get; set; }
 
-            public DateTime CreatedDate { get; set; }
+        //    public DateTime CreatedDate { get; set; }
 
-        }
-        public class Post
-        {
-            public int PostId { get; set; }
+        //}
+        //public class Post
+        //{
+        //    public int PostId { get; set; }
 
-            //for composite keyor fluent api
-            //[ForeignKey(nameof(Blog))]
-            public string Content { get; set; }
+        //    //for composite keyor fluent api
+        //    //[ForeignKey(nameof(Blog))]
+        //    public string Content { get; set; }
 
-            // Foreign key property for one-to-many relationship
-            [ForeignKey(nameof(Blog))]
-            public int BlogId { get; set; }//default conventionda bunu yazmaga ehtiyyac yoxdur, cunki bu shadow properties rolunu oynayir
+        //    // Foreign key property for one-to-many relationship
+        //    [ForeignKey(nameof(Blog))]
+        //    public int BlogId { get; set; }//default conventionda bunu yazmaga ehtiyyac yoxdur, cunki bu shadow properties rolunu oynayir
 
-            // Navigation property for one-to-many relationship
-            public Blog Blog { get; set; }
+        //    // Navigation property for one-to-many relationship
+        //    public Blog Blog { get; set; }
 
-            public DateTime CreatedDate { get; set; }
+        //    public DateTime CreatedDate { get; set; }
 
-        }
+        //}
 
         ////n to n
         //public class Book
@@ -675,6 +794,67 @@ namespace EfCoreShadowProperties
         //    public DateTime CreatedDate { get; set; }
 
         //}
+
+        //=================================================
+        //=================================================
+
+        
+
+
+        public class Employee
+        {
+            //Action<object, string> _lazyLoader;
+            //Region _region;
+            //public Employee() { }
+            //public Employee(Action<object, string> lazyLoader)
+            //    => _lazyLoader = lazyLoader;
+
+            public int Id { get; set; }
+            public int RegionId { get; set; }
+            public string Name { get; set; }
+            public string? Surname { get; set; }
+            public int Salary { get; set; }
+            public  List<Order> Orders { get; set; }
+            public virtual Region Region { get; set; }
+
+            //public Region Region
+            //{
+            //    get => _lazyLoader.Load(this, ref _region);
+            //    set => _region = value;
+            //}
+        }
+
+
+        public class Region
+        {
+            //Action<object, string> _lazyLoader;
+            //ICollection<Employee> _employees;
+            //public Region() { }
+            //public Region(Action<object, string> lazyLoader)
+            // => _lazyLoader = lazyLoader;
+            public int Id { get; set; }
+            public string Name { get; set; }
+            public virtual ICollection<Employee> Employees { get; set; }
+
+            //public ICollection<Employee> Employees
+            //{
+            //    get => _lazyLoader.Load(this, ref _employees);
+            //    set => _employees = value;
+            //}
+        }
+        public class Order
+        {
+            public int Id { get; set; }
+            public int EmployeeId { get; set; }
+            public DateTime OrderDate { get; set; }
+
+            public virtual Employee Employee { get; set; }
+        }
+
+        
+
+
+
 
         public class AppDbContext : DbContext
         {
@@ -937,7 +1117,7 @@ namespace EfCoreShadowProperties
 
                 //TPC
                 //UseTpcMappingStrategy - bu funksiya ile tph kimi de konf. etmek mumkundur
-                modelBuilder.Entity<Person>().UseTpcMappingStrategy();
+                //kmodelBuilder.Entity<Person>().UseTpcMappingStrategy();
 
                 //============================
                 //PK
@@ -1017,33 +1197,39 @@ namespace EfCoreShadowProperties
                 //Sequence - db obyektidir, identity ise table ozelliyi
                 //Sequence - herhansi table a bagli deyildir
 
-                modelBuilder.HasSequence("Ec_Sequence")
-                    .StartsAt(100)
-                    .IncrementsBy(5);
+                //modelBuilder.HasSequence("Ec_Sequence")
+                //    .StartsAt(100)
+                //    .IncrementsBy(5);
 
-                modelBuilder.Entity<Blog>()
-                    .Property(b => b.BlogId)
-                    .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
-                modelBuilder.Entity<Customer>()
-                    .Property(c => c.Id)
-                    .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
+                //modelBuilder.Entity<Blog>()
+                //    .Property(b => b.BlogId)
+                //    .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
+                //modelBuilder.Entity<Customer>()
+                //    .Property(c => c.Id)
+                //    .HasDefaultValueSql("NEXT VALUE FOR Ec_Sequence");
+
+
+                //=======================================
+                //=======================================
+                //Loading Datas
+                
+
+                modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+                modelBuilder.Entity<Employee>()
+                    .Navigation(e => e.Region)
+                    .AutoInclude();
 
 
                 base.OnModelCreating(modelBuilder);
 
             }
 
-
-
-
-
-
-
-
-
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
-                optionsBuilder.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
+                optionsBuilder
+                    .UseLazyLoadingProxies()
+                    .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
+                //optionsBuilder.UseLazyLoadingProxies();
             }
 
             //public DbSet<Person> Persons { get; set; }
@@ -1057,13 +1243,36 @@ namespace EfCoreShadowProperties
             //public DbSet<A> As { get; set; }
             //public DbSet<B> Bs { get; set; }
             //public DbSet<MyEntity> MyEntities { get; set; }
-            public DbSet<Person> Persons { get; set; }
+            //public DbSet<Person> Persons { get; set; }
+            //public DbSet<Employee> Employees { get; set; }
+            //public DbSet<Customer> Customers { get; set; }
+            //public DbSet<Technician> Technicians { get; set; }
+
+
+            //=========================================
+            //=========================================
+            //Loading Datas
+
+            //public DbSet<Person> Persons { get; set; }
             public DbSet<Employee> Employees { get; set; }
-            public DbSet<Customer> Customers { get; set; }
-            public DbSet<Technician> Technicians { get; set; }
+            public DbSet<Order> Orders { get; set; }
+            public DbSet<Region> Regions { get; set; }
+
         }
 
     }
+
+    //public static class LazyLoadingExtension
+    //{
+    //    public static TRelated Load<TRelated>(this Action<object, string> loader,
+    //        object entity, ref TRelated navigation,
+    //        [CallerMemberName] string navigationName = null)
+    //    {
+    //        loader.Invoke(entity, navigationName);
+    //        return navigation;
+    //    }
+    //}
+
 
 
 }

@@ -22,34 +22,6 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Employee", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("RegionId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Salary")
-                        .HasColumnType("int");
-
-                    b.Property<string>("Surname")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RegionId");
-
-                    b.ToTable("Employees");
-                });
-
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>
                 {
                     b.Property<int>("Id")
@@ -58,20 +30,44 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<int>("EmployeeId")
-                        .HasColumnType("int");
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.Property<DateTime>("OrderDate")
                         .HasColumnType("datetime2");
 
+                    b.Property<int>("PersonId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.HasIndex("EmployeeId");
+                    b.HasIndex("PersonId");
 
                     b.ToTable("Orders");
                 });
 
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Region", b =>
+            modelBuilder.Entity("EfCoreShadowProperties.Program+Person", b =>
+                {
+                    b.Property<int>("PersonId")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("PersonId"));
+
+                    b.Property<int>("Gender")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("PersonId");
+
+                    b.ToTable("Persons");
+                });
+
+            modelBuilder.Entity("EfCoreShadowProperties.Program+Photo", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -79,45 +75,49 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<string>("Name")
+                    b.Property<string>("FilePath")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("PersonId")
+                        .HasColumnType("int");
+
                     b.HasKey("Id");
 
-                    b.ToTable("Regions");
-                });
+                    b.HasIndex("PersonId")
+                        .IsUnique();
 
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Employee", b =>
-                {
-                    b.HasOne("EfCoreShadowProperties.Program+Region", "Region")
-                        .WithMany("Employees")
-                        .HasForeignKey("RegionId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Region");
+                    b.ToTable("Photos");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>
                 {
-                    b.HasOne("EfCoreShadowProperties.Program+Employee", "Employee")
+                    b.HasOne("EfCoreShadowProperties.Program+Person", "Person")
                         .WithMany("Orders")
-                        .HasForeignKey("EmployeeId")
+                        .HasForeignKey("PersonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("Employee");
+                    b.Navigation("Person");
                 });
 
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Employee", b =>
+            modelBuilder.Entity("EfCoreShadowProperties.Program+Photo", b =>
+                {
+                    b.HasOne("EfCoreShadowProperties.Program+Person", "Person")
+                        .WithOne("Photo")
+                        .HasForeignKey("EfCoreShadowProperties.Program+Photo", "PersonId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("EfCoreShadowProperties.Program+Person", b =>
                 {
                     b.Navigation("Orders");
-                });
 
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Region", b =>
-                {
-                    b.Navigation("Employees");
+                    b.Navigation("Photo")
+                        .IsRequired();
                 });
 #pragma warning restore 612, 618
         }

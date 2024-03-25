@@ -550,16 +550,214 @@ namespace EfCoreShadowProperties
 
                 //ILazyLoader interface-i
                 //Manuel loadingde virtuale ehtiyyac yoxdur
-                var employee = await context.Employees.FindAsync(1);
+                //var employee = await context.Employees.FindAsync(1);
 
                 //Delegate ile Lazy Loading
 
                 //N+1 problemi - her dongu ucun ayrica sorgu yaradacaq, bu da cox maliyyetlidir
                 //Ona gore de lazy loadingden mumkun qeder uzaq durmaq lazimdir, xususile dongusel islerde
 
+                //Console.WriteLine();
 
+                //====================================================
+                //Complex Query Operators : Joins
+
+                //Join
+                //Query Syntax
+                //var query = from photo in context.Photos
+                //            join person in context.Persons
+                //            on photo.PersonId equals person.Id
+                //            select new
+                //            {
+                //               person.Name,
+                //               photo.FilePath,
+                //            };
+                //var datas = await query.ToListAsync();
+
+
+                //Method Syntax
+                //var query = context.Photos
+                //    .Join(context.Persons,
+                //    photo => photo.PersonId,
+                //    person => person.Id,
+                //    (photo, person) => new
+                //    {
+                //        person.Name,
+                //        photo.FilePath
+                //    });
+                //var datas = await query.ToListAsync();
+
+                //Console.WriteLine();
+
+                ////Multiple columns join
+                //var query = from photo in context.Photos
+                //            join person in context.Persons
+                //            on new { photo.PersonId, photo.FilePath } equals new { PersonId = person.Id, FilePath = person.Name }
+                //            select new
+                //            {
+                //                person.Name,
+                //                photo.FilePath
+                //            };
+                //var datas = await query.ToListAsync();
+
+                //eynile method syntax
+
+                //2 den cox table ile islemek
+                //Query Syntax
+                //var query = from photo in context.Photos
+                //            join person in context.Persons
+                //                on photo.PersonId equals person.PersonId
+                //            join order in context.Orders
+                //                on person.PersonId equals order.PersonId
+                //            select
+                //            //photo;
+                //            //person;
+                //            new
+                //            {
+                //                person.Name,
+                //                photo.FilePath,
+                //                order.Id,
+                //                order.OrderDate
+                //            };
+                //var datas = await query.ToListAsync();
+
+                //method syntax
+                //var query = context.Photos
+                //    .Join(context.Persons,
+                //    photo => photo.PersonId,
+                //    person => person.PersonId,
+                //    (photo, person) => new
+                //    {
+                //        person.PersonId,
+                //        person.Name,
+                //        photo.FilePath
+                //    }
+                //    )
+                //    .Join(context.Orders,
+                //    oncekiSorgu => oncekiSorgu.PersonId,
+                //    order => order.PersonId,
+                //    (oncekiSorgu, order) => new
+                //    {
+                //        oncekiSorgu.Name,
+                //        oncekiSorgu.FilePath,
+                //        order.Id,
+                //        order.OrderDate
+                //    }
+                //    );
+                //var datas = query.ToList();
+
+                //Group Join, not Group By
+                //Query Syntax
+                //var query = from person in context.Persons
+                //            join order in context.Orders
+                //                on person.PersonId equals order.PersonId into personOrders
+                //            from order in personOrders
+                //            select new
+                //            {
+                //                person.Name,
+                //                //Count = personOrders.Count(),
+                //                order.OrderDate,
+                //                order.Id
+                //            };
+                //var datas = await query.ToListAsync();
+
+                //Joins
+
+                //Left Join - sol teref tam gosterilir, varsa elaqesi olan deyerler sagdakinda, yaninda gosterilir
+                //left, ya da Right joinde ancaq QUERY syntax ist. ede bilirik
+
+                //var query = from person in context.Persons
+                //            join order in context.Orders
+                //               on person.PersonId equals order.PersonId into personOrders
+                //            from order in personOrders.DefaultIfEmpty()
+                //            select
+                //            new
+                //            {
+                //                person.Name,
+                //                order.Description
+                //            };
+                //var datas = await query.ToListAsync();
+
+                //DefaultIfEmpty() - left joini yaradan ve cagiran funksiyadir
+
+
+                //Right Join- Ef Core da Riht Join yarada bilmirik, amma bu mentiqle emeliyyat apara bilirik
+                //yeni, left joini ters cevirib sorgu yaratmaqla
+
+                //var query = from order in context.Orders
+                //            join person in context.Persons
+                //               on person.PersonId equals order.PersonId into ordersPersons
+                //            from order in ordersPersons.DefaultIfEmpty()
+                //            select
+                //            new
+                //            {
+                //                person.Name,
+                //                order.Description
+                //            };
+                //var datas = await query.ToListAsync();
+
+                //Full Join - Ef Core bunu da desteklemir,ama bunu da dolayisi ile etmek olur
+                //once Left Join, sonra tersine Left Join(Right Join) edib birlesdiririk
+
+                //var queryLeft = from person in context.Persons
+                //            join order in context.Orders
+                //               on person.PersonId equals order.PersonId into personOrders
+                //            from order in personOrders.DefaultIfEmpty()
+                //            select
+                //            new
+                //            {
+                //                person.Name,
+                //                order.Description
+                //            };
+                //var queryRight = from order in context.Orders
+                //            join person in context.Persons
+                //               on order.PersonId equals person.PersonId into ordersPersons
+                //            from person in ordersPersons.DefaultIfEmpty()
+                //            select
+                //            new
+                //            {
+                //                person.Name,
+                //                order.Description
+                //            };
+                //var fullJoin = queryLeft.Union(queryRight);
+                //var datas = await fullJoin.ToListAsync();
+
+                //Cross Join - Cartedian join,1. tabledaki her setir 2. ye uygun yeresdirlir
+                //var query = from order in context.Orders
+                //            from person in context.Persons
+                //            select new
+                //            {
+                //                order,
+                //                person,
+                //            };
+                //var datas = await query.ToListAsync();
+
+
+                //Where - cross joinde bununla inner join etmek olu meselen
+                //var query = from order in context.Orders
+                //            from person in context.Persons where(p=>p.PersonId == order.PersonId)
+                //            select new
+                //            {
+                //                order,
+                //                person,
+                //            };
+
+
+                //Cross Apply
+                //var query = from order in context.Orders
+                //            from person in context.Persons.Select(p=>order.Description)
+                //            select new
+                //            {
+                //                order,
+                //                person,
+                //            };
+                //var datas = await query.ToListAsync();
+
+                //Outer Apply
 
                 Console.WriteLine();
+
+
 
             }
             //****************************
@@ -798,60 +996,90 @@ namespace EfCoreShadowProperties
         //=================================================
         //=================================================
 
-        
 
 
-        public class Employee
+
+        //public class Employee
+        //{
+        //    //Action<object, string> _lazyLoader;
+        //    //Region _region;
+        //    //public Employee() { }
+        //    //public Employee(Action<object, string> lazyLoader)
+        //    //    => _lazyLoader = lazyLoader;
+
+        //    public int Id { get; set; }
+        //    public int RegionId { get; set; }
+        //    public string Name { get; set; }
+        //    public string? Surname { get; set; }
+        //    public int Salary { get; set; }
+        //    public  List<Order> Orders { get; set; }
+        //    public virtual Region Region { get; set; }
+
+        //    //public Region Region
+        //    //{
+        //    //    get => _lazyLoader.Load(this, ref _region);
+        //    //    set => _region = value;
+        //    //}
+        //}
+        //public class Region
+        //{
+        //    //Action<object, string> _lazyLoader;
+        //    //ICollection<Employee> _employees;
+        //    //public Region() { }
+        //    //public Region(Action<object, string> lazyLoader)
+        //    // => _lazyLoader = lazyLoader;
+        //    public int Id { get; set; }
+        //    public string Name { get; set; }
+        //    public virtual ICollection<Employee> Employees { get; set; }
+
+        //    //public ICollection<Employee> Employees
+        //    //{
+        //    //    get => _lazyLoader.Load(this, ref _employees);
+        //    //    set => _employees = value;
+        //    //}
+        //}
+        //public class Order
+        //{
+        //    public int Id { get; set; }
+        //    public int EmployeeId { get; set; }
+        //    public DateTime OrderDate { get; set; }
+
+        //    public virtual Employee Employee { get; set; }
+        //}
+
+        //=================
+
+        public class Person
         {
-            //Action<object, string> _lazyLoader;
-            //Region _region;
-            //public Employee() { }
-            //public Employee(Action<object, string> lazyLoader)
-            //    => _lazyLoader = lazyLoader;
-
-            public int Id { get; set; }
-            public int RegionId { get; set; }
+            public int PersonId { get; set; }
             public string Name { get; set; }
-            public string? Surname { get; set; }
-            public int Salary { get; set; }
-            public  List<Order> Orders { get; set; }
-            public virtual Region Region { get; set; }
-
-            //public Region Region
-            //{
-            //    get => _lazyLoader.Load(this, ref _region);
-            //    set => _region = value;
-            //}
+            public Gender Gender { get; set; }
+            public ICollection<Order> Orders { get; set; }
+            public Photo Photo { get; set; }
         }
 
-
-        public class Region
+        public enum Gender
         {
-            //Action<object, string> _lazyLoader;
-            //ICollection<Employee> _employees;
-            //public Region() { }
-            //public Region(Action<object, string> lazyLoader)
-            // => _lazyLoader = lazyLoader;
-            public int Id { get; set; }
-            public string Name { get; set; }
-            public virtual ICollection<Employee> Employees { get; set; }
-
-            //public ICollection<Employee> Employees
-            //{
-            //    get => _lazyLoader.Load(this, ref _employees);
-            //    set => _employees = value;
-            //}
+            Man,
+            Woman
         }
+
         public class Order
         {
             public int Id { get; set; }
-            public int EmployeeId { get; set; }
             public DateTime OrderDate { get; set; }
-
-            public virtual Employee Employee { get; set; }
+            public string Description { get; set; }
+            public int PersonId { get; set; }
+            public Person Person { get; set; }
         }
 
-        
+        public class Photo
+        {
+            public int Id { get; set; }
+            public string FilePath { get; set; }
+            public int PersonId { get; set; }
+            public Person Person { get; set; }
+        }
 
 
 
@@ -1009,7 +1237,7 @@ namespace EfCoreShadowProperties
                 //        new Post() { PostId = 2, BlogId = 1,Content = "Schrodinger's cat", CreatedDate = DateTime.Now }
                 //    );
                 //her hansi pk i deyismek istesek eger evvelki migrationlar qalibsa onlara baxacq ve cascade ederek ona uygun diger tabledaki datalari da silecek, ama eger butun migrationlari silmisikse, onda ise xeta verecek, cunki neye uygun sileceyini bilmeyecek
-                
+
                 //seed datalar ancaq migration zamani lazim olur
 
 
@@ -1212,12 +1440,30 @@ namespace EfCoreShadowProperties
                 //=======================================
                 //=======================================
                 //Loading Datas
-                
 
-                modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
-                modelBuilder.Entity<Employee>()
-                    .Navigation(e => e.Region)
-                    .AutoInclude();
+
+                //modelBuilder.ApplyConfigurationsFromAssembly(Assembly.GetExecutingAssembly());
+                //modelBuilder.Entity<Employee>()
+                //    .Navigation(e => e.Region)
+                //    .AutoInclude();
+
+                //=====================================
+                modelBuilder.Entity<Person>()
+                    .HasKey(p => p.PersonId);
+
+                modelBuilder.Entity<Order>()
+                    .HasKey(o => o.Id);
+                modelBuilder.Entity<Order>()
+                    .HasOne(o => o.Person)
+                    .WithMany(p => p.Orders)
+                    .HasForeignKey(o => o.PersonId);
+
+                modelBuilder.Entity<Photo>()
+                    .HasKey(ph => ph.Id);
+                modelBuilder.Entity<Photo>()
+                    .HasOne(ph => ph.Person)
+                    .WithOne(p => p.Photo)
+                    .HasForeignKey<Photo>(ph=>ph.PersonId);
 
 
                 base.OnModelCreating(modelBuilder);
@@ -1227,7 +1473,7 @@ namespace EfCoreShadowProperties
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
                 optionsBuilder
-                    .UseLazyLoadingProxies()
+                    //.UseLazyLoadingProxies()
                     .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
                 //optionsBuilder.UseLazyLoadingProxies();
             }
@@ -1254,9 +1500,14 @@ namespace EfCoreShadowProperties
             //Loading Datas
 
             //public DbSet<Person> Persons { get; set; }
-            public DbSet<Employee> Employees { get; set; }
+            //public DbSet<Employee> Employees { get; set; }
+            //public DbSet<Order> Orders { get; set; }
+            //public DbSet<Region> Regions { get; set; }
+
+            //===============================
+            public DbSet<Person> Persons { get; set; }
             public DbSet<Order> Orders { get; set; }
-            public DbSet<Region> Regions { get; set; }
+            public DbSet<Photo> Photos { get; set; }
 
         }
 

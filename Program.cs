@@ -1,4 +1,5 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -754,6 +755,71 @@ namespace EfCoreShadowProperties
                 //var datas = await query.ToListAsync();
 
                 //Outer Apply
+
+
+
+                //---------------------------------------------------
+                //Raw Sql ile calismaq
+                //Eger ki, sorgunuzu LINQ ile ifade ede bilmezsinizse, yahut da linqin etdiyinden daha optimize bir sorguyu manual 
+                //yazmaq ve ef core uzerinden execute etmek isteyirsinizse, ef core un bu davranisi bu davranisi deskteklediyini 
+                //bilmekde fayda var
+
+                //Query Execute
+
+                //FromSqlInterpolated - before EfCore7.0
+                //bunun ucun sorgu ucun ona uygun model dbsetde qeyd olunmalidir mutleq
+                //Formatible string ile sorgu yazilmalidir
+
+                //var persons = await context.Persons.FromSqlInterpolated($"select * from Persons").ToListAsync();
+
+                //FromSql - EfCore7.0 
+                //var persons = await context.Persons.FromSql($"select * from Persons").ToListAsync();
+
+                //Stored Procedure Execute - eyni qaydada store proceduru da calisdira bilirik
+
+                //Parametrli Sorgu 1
+                //int personId = 3;
+                //var persons = await context.Persons.FromSql($"select * from Persons where PersonId= {personId}").ToListAsync();
+
+                //Parametrli Sorgu 1
+                //SqlParameter personId = new("PersonId","3");//tekce bunu da vermek olur
+                //personId.DbType = System.Data.DbType.Int32;
+                //personId.Direction = System.Data.ParameterDirection.Input;
+                //var persons = await context.Persons.FromSql($"select * from Persons where PersonId= {personId}").ToListAsync();
+
+
+                //Dynamic Sql yaratma - FromSqlRaw
+                //string columnName = "", value = "";
+                //var persons = await context.Persons.FromSql($"select * from Persons where {columnName}={value}").ToListAsync();
+                //bu qaydada mumkun deyil,cunki column adi parametrlesib
+
+                //asagidaki kimi mumkundur ancaq:
+                //string columnName = "PersonId";
+                //SqlParameter value = new("PersonId", "3");
+                //var persons = await context.Persons.FromSqlRaw($"select * from persons where {columnName}=@PersonId",value).ToListAsync();
+                //burda da sql injection xeberdarligi yaranacaq, mesuliyyet developere qalir
+
+
+                //SqlQuery - Entity olmayan scalar sorgularin calisdirilmasini temin edir
+                //tek bir columnda datalarin geldiyi sorgularda ist. olunur, hansisa entity cagirmaga ehtiyyac yoxdur
+
+                //var data = await context.Database.SqlQuery<int>($"select PersonId from Persons").ToListAsync();
+
+                //var data = await context.Database.SqlQuery<int>($"select PersonId value from Persons")//vale yazilmalidir
+                //    .Where(personId=>personId>2)
+                //    .ToListAsync();
+
+                //ExecuteSql - unsert, update, delete
+                //bu komanda ile saveChangesi cagirmaga ehtiyyac yoxdur
+                //amma orm uzerinden etmek tovsiyye olunur
+                //await context.Database.ExecuteSqlAsync($"update Persons set name='FarasatN' where PersonId=1");
+
+                //Mehdudiyyetler
+                //butun columnlar cagirilmalidir,yalniz birini cagirsan xeta atacaq
+
+                //sutun adi ile property adi eyni olmalidir
+
+                //Join mumkun deyil,xeta verecek, include gerekdir
 
                 Console.WriteLine();
 

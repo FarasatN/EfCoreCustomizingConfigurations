@@ -821,6 +821,25 @@ namespace EfCoreShadowProperties
 
                 //Join mumkun deyil,xeta verecek, include gerekdir
 
+
+                //--------------------------------------------
+                //View - nedir
+                //Yaratdigimiz kompleks sorgulari, ehtiyac duydugumuzda daha rahat bir sekilde ist. etmek ucun 
+                //sadelesdiren db obyektidir
+                //her defe ist. olunan agir sorgulari xirda view de bolub saxlamaq olur, performans ve zaman baximindan
+
+                //View yaratmaq:
+                //View i bos migration yaradib icine yazilir, update olunur
+                //Sonra ise Dbset olaraq entity yaradilir ve cagirilir db contextde
+
+                //var personOrders = await context.PersonOrders
+                //    .Where(po=>po.Count>1)
+                //    .ToListAsync();
+
+                //view de pk olmaz, buna gore de hasnokey ile isarelenir
+
+                //ChangeTracker burda islemeyecek, deyisiklikleri db ye yansitmaz
+
                 Console.WriteLine();
 
 
@@ -1147,6 +1166,11 @@ namespace EfCoreShadowProperties
             public Person Person { get; set; }
         }
 
+        public class PersonOrder
+        {
+            public string Name { get; set; }
+            public int Count { get; set; }
+        }
 
 
 
@@ -1531,6 +1555,10 @@ namespace EfCoreShadowProperties
                     .WithOne(p => p.Photo)
                     .HasForeignKey<Photo>(ph=>ph.PersonId);
 
+                //=========================view
+                modelBuilder.Entity<PersonOrder>()
+                    .ToView("vm_PersonOrders")
+                    .HasNoKey();
 
                 base.OnModelCreating(modelBuilder);
 
@@ -1574,6 +1602,10 @@ namespace EfCoreShadowProperties
             public DbSet<Person> Persons { get; set; }
             public DbSet<Order> Orders { get; set; }
             public DbSet<Photo> Photos { get; set; }
+
+            //======================= View
+            public DbSet<PersonOrder> PersonOrders { get; set; }
+
 
         }
 

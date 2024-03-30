@@ -7,10 +7,14 @@ using Microsoft.Extensions.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Diagnostics;
+using System.Diagnostics.Metrics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Runtime.CompilerServices;
+using System.Runtime.Intrinsics.X86;
+using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
+using static EfCoreShadowProperties.Program;
 
 namespace EfCoreShadowProperties
 {
@@ -840,7 +844,67 @@ namespace EfCoreShadowProperties
 
                 //ChangeTracker burda islemeyecek, deyisiklikleri db ye yansitmaz
 
-                Console.WriteLine();
+                //view table formasinda deyerler dondurur
+
+                //--------------------------------------------
+                //Store Procedure - viewde ferqli olaraq parametrli deyer donduren bir nov funksiyadir
+
+                //VIEW VE STORE PROCEDURELARI EF CORE OZU BILMIR, BIZ ONA MIGRATIONDA BILDIRMELIYIK BUNU
+
+                //1. yene de bos migration icinde konf. edilir, update edilir
+                //2. fromsql ile ist. olunur
+
+                //var datas = await context.PersonOrders.FromSql($"exec sp_PersonOrders").ToListAsync();
+
+                //ef core mecbur edir ki sorgulari orm olaraq entity ile qarsilayasan,
+                //dapper ise ele deyil
+
+                //store procedure da bir entity e mutleq qarsiliq gelmelidir
+
+                //geriye deger donduren store procedure ist. etme
+                //SqlParameter sqlParameter = new()
+                //{
+                //    ParameterName = "count",
+                //    SqlDbType = System.Data.SqlDbType.Int,
+                //    Direction = System.Data.ParameterDirection.Output
+                //}; 
+                //await context.Database.ExecuteSqlRawAsync($"exec @count =  sp_BestSellingStaff");
+
+                //inpute ve output in store procedure
+                //---------------------
+                //                --use EfCoreCustomizingConfigurations
+                //create procedure sp_BestSellingStaff(
+                //                @CustomPersonId int, --defaul olara inputdur(input)
+                //    @CustomName nvarchar(max)
+                //)
+                //as
+                //                declare @name nvarchar(max), @count int
+                //    select @name = p.Name,@CustomName = p.Name output, @count = count(*) from Persons p
+                //    join Orders o
+                //        on p.PersonId = o.PersonId
+                //    where p.PersonId = @@CustomPersonId
+                //                                                                         group by p.Name
+                //    order by count(*) desc
+                //    return @count--geriye sayisal deyer gelmelidi
+                //    --print(@name)
+                //declare @CustomName nvarchar(max)
+                //exec sp_PersonOrders 3, @CustomName output
+                //go
+
+                //declare @count int
+                //exec @count = sp_BestSellingStaff
+                //select @count
+
+                SqlParameter nameParameter = new()
+                {
+                    ParameterName = "name",
+                    SqlDbType = System.Data.SqlDbType.NVarChar,
+                    Direction = System.Data.ParameterDirection.Output,
+                    Size = 1000
+                };
+                await context.Database.ExecuteSqlRawAsync($"execute sp_BestSellingStaff 3, @CustomName");
+
+                Console.WriteLine(nameParameter.Value);
 
 
 
@@ -1166,6 +1230,7 @@ namespace EfCoreShadowProperties
             public Person Person { get; set; }
         }
 
+        [NotMapped]
         public class PersonOrder
         {
             public string Name { get; set; }
@@ -1556,8 +1621,12 @@ namespace EfCoreShadowProperties
                     .HasForeignKey<Photo>(ph=>ph.PersonId);
 
                 //=========================view
+                //modelBuilder.Entity<PersonOrder>()
+                //    .ToView("vm_PersonOrders")
+                //    .HasNoKey();
+
+                //=========================store procedure
                 modelBuilder.Entity<PersonOrder>()
-                    .ToView("vm_PersonOrders")
                     .HasNoKey();
 
                 base.OnModelCreating(modelBuilder);

@@ -895,18 +895,41 @@ namespace EfCoreShadowProperties
                 //exec @count = sp_BestSellingStaff
                 //select @count
 
-                SqlParameter nameParameter = new()
-                {
-                    ParameterName = "name",
-                    SqlDbType = System.Data.SqlDbType.NVarChar,
-                    Direction = System.Data.ParameterDirection.Output,
-                    Size = 1000
-                };
-                await context.Database.ExecuteSqlRawAsync($"execute sp_BestSellingStaff 3, @CustomName");
+                //SqlParameter nameParameter = new()
+                //{
+                //    ParameterName = "name",
+                //    SqlDbType = System.Data.SqlDbType.NVarChar,
+                //    Direction = System.Data.ParameterDirection.Output,
+                //    Size = 1000
+                //};
+                //await context.Database.ExecuteSqlRawAsync($"execute sp_BestSellingStaff 3, @CustomName");
 
-                Console.WriteLine(nameParameter.Value);
+                //Console.WriteLine(nameParameter.Value);
+
+                //-------------------------------------------------
+                //Scalar ve Inline funksiyalarin Ef Core da istifadesi
+
+                //Scalar - geriye deyer donduren funksiyadir
+                //Scalar funks. yaratmaq:
+                //1. bos bir migration yaradlilir
+                //2. bunun icerisinde Up metodu icinde Sql metodu ile Create kodlari yazilacaq, Down icinde de Drop kodlari yazilacaq
+                //3. migrate edilir
+
+                //var persons = await (from person in context.Persons
+                //              where context.GetPersonTotalOrderPrice(person.PersonId) > 5
+                //              select person).ToListAsync();
+
+                //var persons = context.GetPersonTotalOrderPrice(1);
 
 
+                //Inline - Geriye yalniz table donduren funksiyalardir
+                //1. bos migration yarat
+                //2. burda konf. edilir
+                //sql terefde hamisi eyni qaydada, sadece "int", "string" yerine "table" yazacagiq
+
+                var persons = await context.BestSellingStaff(3000).ToListAsync();
+                
+                Console.WriteLine();
 
             }
             //****************************
@@ -1218,6 +1241,7 @@ namespace EfCoreShadowProperties
             public int Id { get; set; }
             public DateTime OrderDate { get; set; }
             public string Description { get; set; }
+            public double Price { get; set; }
             public int PersonId { get; set; }
             public Person Person { get; set; }
         }
@@ -1236,6 +1260,15 @@ namespace EfCoreShadowProperties
             public string Name { get; set; }
             public int Count { get; set; }
         }
+
+        public class BestSellingStaff
+        {
+            public string Name { get; set; }
+            public int OrderCount { get; set; }
+            public double TotalOrderPrice { get; set; }
+        }
+
+
 
 
 
@@ -1629,9 +1662,28 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<PersonOrder>()
                     .HasNoKey();
 
+                //Scalar
+                modelBuilder.HasDbFunction(typeof(AppDbContext).GetMethod(nameof(AppDbContext.GetPersonTotalOrderPrice), new[] { typeof(int) }))
+                    .HasName("GetPersonTotalOrderPrice");
+
+                modelBuilder.HasDbFunction(typeof(AppDbContext).GetMethod(nameof(AppDbContext.BestSellingStaff), new[] { typeof(int) }))
+                    .HasName("BestSellingStaff");
+                modelBuilder.Entity<BestSellingStaff>()
+                    .HasNoKey();
+
                 base.OnModelCreating(modelBuilder);
 
             }
+
+            //Scalar entity
+            public double GetPersonTotalOrderPrice(int personId)
+            {
+                throw new Exception();
+            }
+
+            //Inline entity
+            public IQueryable<BestSellingStaff> BestSellingStaff(int totalOrderPrice = 0)
+                => FromExpression(()=>BestSellingStaff(totalOrderPrice));
 
             protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {

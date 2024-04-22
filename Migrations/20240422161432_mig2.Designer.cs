@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    [Migration("20240419135046_mig_inline")]
-    partial class mig_inline
+    [Migration("20240422161432_mig2")]
+    partial class mig2
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -24,6 +24,21 @@ namespace EfCoreCustomizingConfigurations.Migrations
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+
+            modelBuilder.Entity("EfCoreShadowProperties.Program+BestSellingStaff", b =>
+                {
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderCount")
+                        .HasColumnType("int");
+
+                    b.Property<double>("TotalOrderPrice")
+                        .HasColumnType("float");
+
+                    b.ToTable("BestSellingStaff");
+                });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>
                 {

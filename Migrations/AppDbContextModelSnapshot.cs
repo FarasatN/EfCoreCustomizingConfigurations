@@ -22,6 +22,21 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("EfCoreShadowProperties.Program+BestSellingStaff", b =>
+                {
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("OrderCount")
+                        .HasColumnType("int");
+
+                    b.Property<double>("TotalOrderPrice")
+                        .HasColumnType("float");
+
+                    b.ToTable("BestSellingStaff");
+                });
+
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>
                 {
                     b.Property<int>("Id")

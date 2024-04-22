@@ -3,9 +3,11 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Internal;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Reflection;
@@ -15,6 +17,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using static EfCoreShadowProperties.Program;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
 namespace EfCoreShadowProperties
 {
@@ -927,15 +930,98 @@ namespace EfCoreShadowProperties
                 //2. burda konf. edilir
                 //sql terefde hamisi eyni qaydada, sadece "int", "string" yerine "table" yazacagiq
 
-                var persons = await context.BestSellingStaff(3000).ToListAsync();
-                
-                Console.WriteLine();
+                //var persons = await context.BestSellingStaff(3000).ToListAsync();
+
+                //Console.WriteLine();
+
+
+                //----------------------------------------------------------
+                //Database Prperty-si - manual advanced seviyyede konf. ucundur
+                //misal ucun:
+
+                //Normalda transactionu ef core oz uzerine goturur
+
+                //BeginTransaction - anliq manual mudaxile etmek istesek
+                //IDbContextTransaction transaction = context.Database.BeginTransaction();//bu instans ile ozumuz idare edirik
+                //transaction.Commit();
+
+                //CommitTransaction - manual uzerinde is etmemek ucun ise budur
+                //context.Database.CommitTransaction();
+
+                //RollBackTransaction - edilen islerin rol back edilmesi ucundur
+                //context.Database.RollbackTransaction();
+
+                //CanConnect - db ile baglanti yaradila bileceyini bool ile yoxlayir
+                //bool conect = context.Database.CanConnect();
+                //Console.WriteLine(conect);
+
+                //EnsureCreated - cox onremlidir.migration olmadan db ni yaradir
+                //context.Database.EnsureCreated();
+                //var isDeleted = context.Database.EnsureDeleted();//runtime migration olmadan silir
+                //Console.WriteLine(isDeleted);
+
+
+                //GenerateCretaeScript - db nin sql kodlarini script kimi verir
+                //var script = context.Database.GenerateCreateScript();
+                //Console.WriteLine(script);
+
+                //ExecuteSql - only for INSERT, UPDATE, DELETE, or DDL (Data Definition Language) statements.
+                //For Select - FromSqlRaw(ef7+), FromSqlInterpolated
+
+                //var person = context.Database.ExecuteSql($"select p.Name, p.Gender from Persons p");
+                //Console.WriteLine(person);
+
+                //ExecuteSql - default olaraq sql injectiondan qoruyur,amma ExecuteSqlRaw yox
+                //cunki string interpolation yoxdur ve oldugu kimi db ye sorgu gedir, digerinde ise convert olunur
+                //yeni, raw tehlukesiz deyil
+
+                //var person = context.Database.ExecuteSql($"delete Persons where PersonId=1");
+                //Console.WriteLine(person);
+
+
+                //SqlQuery/SqlQueryRaw, evezine FromSql ist. olunur
+                //context.Database.SqlQuery()
+
+
+                //GetAppliedMigrations - eger migrationlari elde edib, haradasa ist. edeceyikse
+                //var migs = context.Database.GetMigrations();//runtime da elde edirik
+
+                //EN GUNCEL, AKTIV OLANI MIGRATIONlari GOSTERIR ANCAQ, yeni, apply olmuslari
+                //Console.WriteLine();
+
+                //GetPendingMigrations - apply olunmmamislari getirir
+
+                //Migrate - runtime da migrate edir
+                //context.Database.Migrate();//sona qeder migrate edir, Allah ne verdiyse ;)
+
+                ////EnsureCreated vs Migrate!!!
+                ///EnsureCreated - migrationlari ehate etmir
+
+                //OpenConnection - db ile connection acir
+                //CloseConnection - baglayir
+                //context.Database.OpenConnection();
+                //context.Database.CloseConnection();
+
+                //GetConnectionString - elaqeli contex obketinin un o anda istifade etdiyi Connection Stringi gosterir
+                //Console.WriteLine(context.Database.GetConnectionString());
+
+                //GetDbConnection - Ef coreun esasi olan Ado.Netin ist. etdiyi DbConnection obyektini
+                //elde etmeye komek eden funksiydir, yeni AdoNete aparir
+                //DbConnection connection = context.Database.GetDbConnection();
+                //SqlConnection connection = (SqlConnection)context.Database.GetDbConnection();//casting
+                //Console.WriteLine();
+
+                //SetDbConnection - customize connectionlari daxil edirik
+                //context.Database.SetDbConnection(....);
+
+                //Providername - hansi sql provideri ist. edirik
+               // Console.WriteLine(context.Database.ProviderName);//~ Microsoft.EntityFrameworkCore.SqlServer
 
             }
             //****************************
             //executig stopped
             stopwatch.Stop();
-            Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} milliseconds / {stopwatch.ElapsedMilliseconds / 1000.0}");
+            Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} milliseconds / {stopwatch.ElapsedMilliseconds / 1000.0} seconds");
             //for exm: Execution Time: 5730 milliseconds / 5.73
             Console.ResetColor();
         }

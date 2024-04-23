@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.Extensions.Internal;
+using Microsoft.Extensions.Logging;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
@@ -1032,8 +1033,40 @@ namespace EfCoreShadowProperties
                 //PK kesinlikle olmayacaq
                 //Change Tracker aktiv deyildir
                 //Yalnizca TPH mumkundur,diferleri yox
-                var datas = await context.PersonOrderCounts.ToListAsync();
-                Console.WriteLine();
+
+                //var datas = await context.PersonOrderCounts.ToListAsync();
+                //Console.WriteLine();
+
+                //-------------------------------------------------------------------------
+                //Logging - calisan bir sistemin runtime da nece davrandigini gostermek ucun Log mexanizmlarindan istifade olunur
+
+                //Neleri Loglayiriq
+                //Ef Core da - lazimi sorgulari loglayiriq, hessas datalari da hemcinin
+                //Log - "gunluk" menasina gelir
+
+                //Sade log numunesi, nuget paketine ehtiyyac yoxdur
+
+                //Normalda console dan loga baxmaq izlenilebilir deyildir,
+                //ona gore de xarici fayllarda saxlamaq en dogrusudur
+
+                //Hessas datalarin logu
+                //EfCore default olaraq herhansi datanin degerini gostermir, tehlukesizlik prinsipine uygun
+                //amma bezen datanin deyerini bilmek gereke biler, ayird etmek ucun
+                //EnableSensitiveDataLogging() - bu imkani bize yaradir
+                
+                //Exceptionlari loglama, detalli olaraq - EnableDetailedErrors
+
+                //LOGUN ONEMI-BAZA ILE ELAQE ITE BILER, BUNU BURDAN OYRENE BILERIK
+
+                //EfCore default olaraq debugin ustundeki butun levelleri loglayir
+                //asagida bunu da deyise bilirik
+
+                var persons = await context.Persons.ToListAsync();
+                foreach (var item in persons)
+                {
+                    Console.WriteLine(item.Name);
+                }
+                Console.ReadLine();
 
             }
             //****************************
@@ -1800,12 +1833,38 @@ namespace EfCoreShadowProperties
             public IQueryable<BestSellingStaff> BestSellingStaff(int totalOrderPrice = 0)
                 => FromExpression(()=>BestSellingStaff(totalOrderPrice));
 
-            protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+
+            StreamWriter _log = new("logs.txt",append: true);
+            protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
                 optionsBuilder
                     //.UseLazyLoadingProxies()
                     .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
                 //optionsBuilder.UseLazyLoadingProxies();
+
+                //logging - default olaraq debug daxil ondan ustu loglayir
+                optionsBuilder.LogTo(Console.WriteLine, LogLevel.Warning)//warningin uzerindekini loglayir,bize esas xeta lazimdir, sorgu neticesi yox
+                    .EnableSensitiveDataLogging()//enabling sesitive data
+                    .EnableDetailedErrors();//enabling detailed errors
+
+                //optionsBuilder.LogTo(message => Debug.WriteLine(message));
+                //optionsBuilder.LogTo(message =>_log.WriteLine(message));
+                //optionsBuilder.LogTo(async message => await _log.WriteLineAsync(message))
+                //    .EnableSensitiveDataLogging()
+                //    .EnableDetailedErrors();
+
+            }
+
+            public override void Dispose()
+            {
+                base.Dispose();
+                _log.Dispose();
+            }
+
+            public override async ValueTask DisposeAsync()
+            {
+                await _log.DisposeAsync();
+                await base.DisposeAsync(); 
             }
 
             //public DbSet<Person> Persons { get; set; }

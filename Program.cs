@@ -1015,7 +1015,25 @@ namespace EfCoreShadowProperties
                 //context.Database.SetDbConnection(....);
 
                 //Providername - hansi sql provideri ist. edirik
-               // Console.WriteLine(context.Database.ProviderName);//~ Microsoft.EntityFrameworkCore.SqlServer
+                // Console.WriteLine(context.Database.ProviderName);//~ Microsoft.EntityFrameworkCore.SqlServer
+
+
+                //----------------------------------
+                //Keyless Entity Types
+                //Normal entity lere elave olaraq PK i olmayan query lere qarsi db sorgulari yaratmaq ucundur
+
+                //umumilikde statistiksel emeliyyatlarin group by ve yaxud pivot table ile yaradilan tablellarda pk olmur
+                //onlari KET ile qarsilaya bilerik
+
+                //view formatinda qarsilayacaq entity yaradib db setde elave edirik
+                //bos migration yaradib sql kodlari up/down da konfiq edirik
+                //sonra OnModelCreating de keysin view oldugunu config edirik
+                //HasNoKey evezine [Keyless] eyni mahiyyet dasiyir
+                //PK kesinlikle olmayacaq
+                //Change Tracker aktiv deyildir
+                //Yalnizca TPH mumkundur,diferleri yox
+                var datas = await context.PersonOrderCounts.ToListAsync();
+                Console.WriteLine();
 
             }
             //****************************
@@ -1024,6 +1042,12 @@ namespace EfCoreShadowProperties
             Console.WriteLine($"Execution Time: {stopwatch.ElapsedMilliseconds} milliseconds / {stopwatch.ElapsedMilliseconds / 1000.0} seconds");
             //for exm: Execution Time: 5730 milliseconds / 5.73
             Console.ResetColor();
+        }
+
+        public class PersonOrderCount
+        {
+            public string Name { get; set; }
+            public int Count { get; set; }
         }
 
         //tph, tpt, tpc
@@ -1757,6 +1781,11 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<BestSellingStaff>()
                     .HasNoKey();
 
+                //KET
+                modelBuilder.Entity<PersonOrderCount>()
+                    .HasNoKey()
+                    .ToView("vw_PersonOrderCount");
+
                 base.OnModelCreating(modelBuilder);
 
             }
@@ -1809,6 +1838,7 @@ namespace EfCoreShadowProperties
             public DbSet<Person> Persons { get; set; }
             public DbSet<Order> Orders { get; set; }
             public DbSet<Photo> Photos { get; set; }
+            public DbSet<PersonOrderCount> PersonOrderCounts { get; set; }
 
             //======================= View
             public DbSet<PersonOrder> PersonOrders { get; set; }

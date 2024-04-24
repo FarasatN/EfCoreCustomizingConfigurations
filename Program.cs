@@ -1053,7 +1053,7 @@ namespace EfCoreShadowProperties
                 //EfCore default olaraq herhansi datanin degerini gostermir, tehlukesizlik prinsipine uygun
                 //amma bezen datanin deyerini bilmek gereke biler, ayird etmek ucun
                 //EnableSensitiveDataLogging() - bu imkani bize yaradir
-                
+
                 //Exceptionlari loglama, detalli olaraq - EnableDetailedErrors
 
                 //LOGUN ONEMI-BAZA ILE ELAQE ITE BILER, BUNU BURDAN OYRENE BILERIK
@@ -1061,10 +1061,29 @@ namespace EfCoreShadowProperties
                 //EfCore default olaraq debugin ustundeki butun levelleri loglayir
                 //asagida bunu da deyise bilirik
 
+                //var persons = await context.Persons.ToListAsync();
+                //foreach (var item in persons)
+                //{
+                //    Console.WriteLine(item.Name);
+                //}
+                //Console.ReadLine();
+                
+                //Query Log - Linq sorgularini loglamaq ucundur
+                //Console uzerinden - Microsoft.Extensions.Console paketinden ist. olunur
                 var persons = await context.Persons.ToListAsync();
                 foreach (var item in persons)
                 {
                     Console.WriteLine(item.Name);
+                }
+
+                var filterPersons = await context.Persons
+                    .Include(p => p.Orders)
+                    .Where(p => p.Name.Contains("f"))
+                    .Select(p => new { p.Name, p.PersonId })
+                    .ToListAsync();
+                foreach (var item in filterPersons)
+                {
+                    Console.WriteLine(item.PersonId+" : "+item.Name);
                 }
                 Console.ReadLine();
 
@@ -1835,6 +1854,13 @@ namespace EfCoreShadowProperties
 
 
             StreamWriter _log = new("logs.txt",append: true);
+
+            readonly ILoggerFactory loggerFactory = LoggerFactory.Create(builder=>builder
+                .AddFilter((category, level) =>//info seviyyesindeki loglari gosterir
+                {
+                   return category == DbLoggerCategory.Database.Command.Name && level == LogLevel.Information;
+                })
+                .AddConsole());
             protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
                 optionsBuilder
@@ -1843,9 +1869,9 @@ namespace EfCoreShadowProperties
                 //optionsBuilder.UseLazyLoadingProxies();
 
                 //logging - default olaraq debug daxil ondan ustu loglayir
-                optionsBuilder.LogTo(Console.WriteLine, LogLevel.Warning)//warningin uzerindekini loglayir,bize esas xeta lazimdir, sorgu neticesi yox
-                    .EnableSensitiveDataLogging()//enabling sesitive data
-                    .EnableDetailedErrors();//enabling detailed errors
+                //optionsBuilder.LogTo(Console.WriteLine, LogLevel.Warning)//warningin uzerindekini loglayir,bize esas xeta lazimdir, sorgu neticesi yox
+                //    .EnableSensitiveDataLogging()//enabling sesitive data
+                //    .EnableDetailedErrors();//enabling detailed errors
 
                 //optionsBuilder.LogTo(message => Debug.WriteLine(message));
                 //optionsBuilder.LogTo(message =>_log.WriteLine(message));
@@ -1853,6 +1879,8 @@ namespace EfCoreShadowProperties
                 //    .EnableSensitiveDataLogging()
                 //    .EnableDetailedErrors();
 
+                //Query Logger
+                optionsBuilder.UseLoggerFactory(loggerFactory);
             }
 
             public override void Dispose()

@@ -1067,23 +1067,59 @@ namespace EfCoreShadowProperties
                 //    Console.WriteLine(item.Name);
                 //}
                 //Console.ReadLine();
-                
+
                 //Query Log - Linq sorgularini loglamaq ucundur
                 //Console uzerinden - Microsoft.Extensions.Console paketinden ist. olunur
-                var persons = await context.Persons.ToListAsync();
+
+                //Query Tags - observ olunan sorgulara commentler elave etmek olur
+                //TagWith
+                //Multiple TagWith, ardicil tagwith yazmaq olur
+                //TagWithCallSite - commentden elave hansi setirde oldugunu gosterir(.cs faylinda)
+
+                //var persons = await context.Persons.TagWith("Persons: ").TagWith("Persons: ").ToListAsync();
+                //foreach (var item in persons)
+                //{
+                //    Console.WriteLine(item.Name);
+                //}
+
+                //var filterPersons = await context.Persons.TagWith("Filtered Persons: ")
+                //    .Include(p => p.Orders)
+                //    .TagWithCallSite("with orders")
+                //    .Where(p => p.Name.Contains("f"))
+                //    .Select(p => new { p.Name, p.PersonId })
+                //    .ToListAsync();
+                //foreach (var item in filterPersons)
+                //{
+                //    Console.WriteLine(item.PersonId+" : "+item.Name);
+                //}
+                //Console.ReadLine();
+
+                //------------------------------
+                //GlobalQueryFilter- bir entitye app seviyyesinde umumi/predefined sertler yaratmamizi ve belece datalari qlobal sekilde filter etmeyimizi saglayan
+                //belece, qeyd olunan entity uzerinden edilen butun sorgulamalarda elave serte ehtiyyac
+                //..olmadan filterleri avtomatik appy edir
+                //Cox az yerde lazim olsa da, heyati onem dasiyan yerler var:
+                //meselen, IsActive adinda propertyleri where ile true olanlari ancaq cekmek iteyiremse, global ede bilerem
+                //MultiTenancy applarda TenantId yaradaken ist. oluna biler
+
+                //meselen; asagoida her defe butun sorgularda where yazmaqdansa
+                //bunu HasQueryFilter() lambda ile modelBuilderde qeyd edirik
+                //await context.Persons.Where(p => p.IsActive).ToListAsync();
+
+                //yaxud da ki, en azi bir satisi olan personlar gelsin:
+                //await context.Persons.Include(p=>p.Orders).Where(p=>p.Orders.Count>0).ToListAsync();
+
+                //Query Filteri ignore etmek ucun - IgnoreQueryFilters() metodunu ist. edirik
+
+                //Qeyd: bu ozelliye farqinde olmadan sert tetbiq etkemk ola biler, bu ciddi nuansdir
+                //..mes: istemeden 2 defe filter ede bilerik, eyni sertde, hem global. hem ozumuz
+
+
+
+                var persons = await context.Persons.TagWithCallSite("Active Persons: ").IgnoreQueryFilters().ToListAsync();
                 foreach (var item in persons)
                 {
                     Console.WriteLine(item.Name);
-                }
-
-                var filterPersons = await context.Persons
-                    .Include(p => p.Orders)
-                    .Where(p => p.Name.Contains("f"))
-                    .Select(p => new { p.Name, p.PersonId })
-                    .ToListAsync();
-                foreach (var item in filterPersons)
-                {
-                    Console.WriteLine(item.PersonId+" : "+item.Name);
                 }
                 Console.ReadLine();
 
@@ -1390,6 +1426,8 @@ namespace EfCoreShadowProperties
             public Gender Gender { get; set; }
             public ICollection<Order> Orders { get; set; }
             public Photo Photo { get; set; }
+
+            public bool IsActive { get; set; }
         }
 
         public enum Gender
@@ -1837,6 +1875,9 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<PersonOrderCount>()
                     .HasNoKey()
                     .ToView("vw_PersonOrderCount");
+
+                modelBuilder.Entity<Person>().HasQueryFilter(p=>p.IsActive);
+                modelBuilder.Entity<Person>().HasQueryFilter(p=>p.Orders.Count>0);
 
                 base.OnModelCreating(modelBuilder);
 

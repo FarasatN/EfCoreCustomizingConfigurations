@@ -4,6 +4,7 @@ using EfCoreShadowProperties;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20240426080100_mig_owned_entity2")]
+    partial class mig_owned_entity2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -191,8 +194,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                             b1.Property<string>("Name")
                                 .IsRequired()
-                                .HasColumnType("nvarchar(max)")
-                                .HasColumnName("Name");
+                                .HasColumnType("nvarchar(max)");
 
                             b1.HasKey("EmployeeId");
 
@@ -202,54 +204,11 @@ namespace EfCoreCustomizingConfigurations.Migrations
                                 .HasForeignKey("EmployeeId");
                         });
 
-                    b.OwnsMany("EfCoreShadowProperties.Program+EmployeeOrder", "EmployeeOrders", b1 =>
-                        {
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("int");
-
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
-
-                            b1.Property<int>("EmployeeId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("OrderDate")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<int>("OwnedEmployeeId")
-                                .HasColumnType("int");
-
-                            b1.Property<int>("Price")
-                                .HasColumnType("int");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("EmployeeId");
-
-                            b1.HasIndex("OwnedEmployeeId");
-
-                            b1.ToTable("EmployeeOrder");
-
-                            b1.HasOne("EfCoreShadowProperties.Program+Employee", "Employee")
-                                .WithMany()
-                                .HasForeignKey("EmployeeId")
-                                .OnDelete(DeleteBehavior.Cascade)
-                                .IsRequired();
-
-                            b1.WithOwner()
-                                .HasForeignKey("OwnedEmployeeId");
-
-                            b1.Navigation("Employee");
-                        });
-
                     b.Navigation("Address")
                         .IsRequired();
 
                     b.Navigation("EmployeeName")
                         .IsRequired();
-
-                    b.Navigation("EmployeeOrders");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>

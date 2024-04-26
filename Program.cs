@@ -1114,14 +1114,38 @@ namespace EfCoreShadowProperties
                 //Qeyd: bu ozelliye farqinde olmadan sert tetbiq etkemk ola biler, bu ciddi nuansdir
                 //..mes: istemeden 2 defe filter ede bilerik, eyni sertde, hem global. hem ozumuz
 
+                //var persons = await context.Persons.TagWithCallSite("Active Persons: ").IgnoreQueryFilters().ToListAsync();
+                //foreach (var item in persons)
+                //{
+                //    Console.WriteLine(item.Name);
+                //}
+                //Console.ReadLine();
 
 
-                var persons = await context.Persons.TagWithCallSite("Active Persons: ").IgnoreQueryFilters().ToListAsync();
-                foreach (var item in persons)
-                {
-                    Console.WriteLine(item.Name);
-                }
-                Console.ReadLine();
+                //----------------------------------------------
+                //Owned Entity Types - EfCore entity siniflerini parcalayaraq, toplu olaraq ferqli siniflerde
+                //.. saxlamagimiza ve butun bu sinifleri elaqeli entityde birlesdirib butunsel olaraq calismamiza
+                //..ve elaqeli entitylerde birlesdirib butunsel olaraq calismamiza izin vermektedir
+                //Belece bir entity,sahib olunan(owned) birden cox alt sinifin birlesmesiyle meydana gelebilmektedir
+
+                //Domain Drive Design(DDD) - yanasmasinda Value Objectlere qarsiliq olaraq Owned Entity Types-lar ist. olunur
+
+                //Owned Entity Types - nece tetbiq olunur?
+                //OwnsOne metodu - normal entityde ferqli siniflerin cagirilmasi pk kimi xetalar verecekdir
+                //..cunki, birbasa bir classin referans alinmasi ef core tarafinden relational bir design kimi qarsilanir
+                //ona gore de xususi olaraq bildirmeliik
+
+                //modelBuilderde etdiyimizi [Owned] ile de ede bilirik
+
+
+                //OwnsMany - DbSet e ehtiyyac olmadan, ICollection tipinde properti ucundu
+                //var d = await context.Employees.ToListAsync();
+                //Console.WriteLine();
+
+                //Mehdudiyyetler - DbSet e ehtiyyac yoxdur
+                //Birbasa entity uzerinde konf. mumkun deyil
+                //Ic ice mumkun deyil
+
 
             }
             //****************************
@@ -1131,6 +1155,47 @@ namespace EfCoreShadowProperties
             //for exm: Execution Time: 5730 milliseconds / 5.73
             Console.ResetColor();
         }
+        //----------------
+        //Owned Entity
+        public class Employee
+        {
+            public int Id { get; set; }
+            //public string Name { get; set; }
+            //public string MiddleName { get; set; }
+            //public string LastName { get; set; }
+            //public string StreetAddress { get; set; }
+            //public string Location { get; set; }
+            public bool IsActive { get; set; }
+            public EmployeeName EmployeeName { get; set; }
+            public Address Address { get; set; }
+
+            public ICollection<EmployeeOrder> EmployeeOrders { get; set; }
+        }
+        //[Owned]
+        public class EmployeeName
+        {
+            public string Name { get; set; }
+            public string MiddleName { get; set; }
+            public string LastName { get; set; }
+        }
+        //[Owned]
+        public class Address
+        {
+            public string StreetAddress { get; set; }
+            public string Location { get; set; }
+        }
+        public class EmployeeOrder
+        {
+            //public int Id { get; set; }
+            public string OrderDate { get; set; }
+            public int Price { get; set; }
+
+            //navigation olmmalidir OwnedMany de
+            //public Employee Employee { get; set; }
+        }
+
+
+        //---------------
 
         public class PersonOrderCount
         {
@@ -1879,6 +1944,21 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<Person>().HasQueryFilter(p=>p.IsActive);
                 modelBuilder.Entity<Person>().HasQueryFilter(p=>p.Orders.Count>0);
 
+                //Owned Entities with modelBuilder
+                modelBuilder.Entity<Employee>().OwnsOne(e => e.EmployeeName, builder =>
+                {
+                    builder.Property(e => e.Name).HasColumnName("Name");
+                });
+                modelBuilder.Entity<Employee>().OwnsOne(e => e.Address);
+
+                //OwnsMany
+                modelBuilder.Entity<Employee>().OwnsMany(e=>e.EmployeeOrders,builder=>
+                {
+                    builder.WithOwner().HasForeignKey("OwnedEmployeeId");
+                    builder.Property<int>("Id");
+                    builder.HasKey("Id");
+                });
+
                 base.OnModelCreating(modelBuilder);
 
             }
@@ -1971,6 +2051,8 @@ namespace EfCoreShadowProperties
             //======================= View
             public DbSet<PersonOrder> PersonOrders { get; set; }
 
+            //Owned Entity
+            public DbSet<Employee> Employees { get; set; }
 
         }
 
@@ -1989,6 +2071,20 @@ namespace EfCoreShadowProperties
 
 
 
+}
+
+
+//class uzerinden
+public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
+{
+    public void Configure(EntityTypeBuilder<Employee> builder)
+    {
+        builder.OwnsOne(e => e.EmployeeName, builder =>
+        {
+            builder.Property(e => e.Name).HasColumnName("Name");
+        });
+        builder.OwnsOne(e => e.Address);
+    }
 }
 
 

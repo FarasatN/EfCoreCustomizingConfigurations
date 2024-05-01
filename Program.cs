@@ -1144,7 +1144,111 @@ namespace EfCoreShadowProperties
 
                 //Mehdudiyyetler - DbSet e ehtiyyac yoxdur
                 //Birbasa entity uzerinde konf. mumkun deyil
-                //Ic ice mumkun deyil
+                //Ic ice coxlu Owned Entity mumkun deyil
+
+
+                //---------------------------------------------------
+                //Temporal Table - git kimi deyisiklikleri tarixi ile arxiv edib saxlayir(EfCore 6+)
+                //movcud datalar migrationlarla temporal table a cevrile biler
+                //IsTemporal -  metodu ile modelBuilder de tetbiq olunur
+
+                //Sonradaan da var olan entityni temporal etmek olur
+                //TT a data elave edende historye dusmur
+                //var emp = new List<EmployeeTT>()
+                //{
+                //    new(){ Name="Farasat", Surname="Novruzov"},
+                //    new(){ Name="Magsad", Surname="Novruzov"},
+                //    new(){ Name="Mardan", Surname="Novruzov"},
+                //};
+                //await context.AddRangeAsync(emp);
+                //await context.SaveChangesAsync();
+
+                //var empl = await context.EmployeeTTs.FindAsync(3);
+                //context.EmployeeTTs.Remove(empl);
+                //await context.SaveChangesAsync();
+                //Console.WriteLine(empl.Name);
+
+                //kecmisde olan datani sorgulamaq
+                //TemporalAsOf - mueyyen bir zaman icin degisikliye ugrayan butun obyektleri geri donduren funks
+                //var datas = await context.EmployeeTTs.TemporalAsOf(new DateTime(2024, 04, 30, 12, 30, 44)).Select(p => new
+                //{
+                //    p.Id,
+                //    p.Name,
+                //    PeriodStart = EF.Property<DateTime>(p, "PeriodStart"),
+                //    PeriodEnd = EF.Property<DateTime>(p, "PeriodEnd"),
+                //}).ToListAsync();
+                //foreach (var data in datas)
+                //{
+                //    Console.WriteLine(data.Id + " " + data.Name + " | " + data.PeriodStart + " - " + data.PeriodEnd);
+                //}
+
+                //TemporalAll - update ya da delet olmus butun datalarin kecmis formalarini qaytarir - gelmis kecmis hamisini
+                //var datas = await context.EmployeeTTs.TemporalAll().Select(p => new
+                //{
+                //    p.Id,
+                //    p.Name,
+                //    PeriodStart = EF.Property<DateTime>(p, "PeriodStart"),
+                //    PeriodEnd = EF.Property<DateTime>(p, "PeriodEnd"),
+                //}).ToListAsync();
+                //foreach (var data in datas)
+                //{
+                //    Console.WriteLine(data.Id + " " + data.Name + " | " + data.PeriodStart + " - " + data.PeriodEnd);
+                //}
+
+                //TemporalFromTo - vaxt araligi uzre 
+                //var startDate = new DateTime(2024, 04, 30, 13, 20, 33);
+                //var endDate = new DateTime(2024, 04, 30, 14, 20, 33);
+                //var datas = await context.EmployeeTTs.TemporalFromTo(startDate,endDate).Select(p => new
+                //{
+                //    p.Id,
+                //    p.Name,
+                //    PeriodStart = EF.Property<DateTime>(p, "PeriodStart"),
+                //    PeriodEnd = EF.Property<DateTime>(p, "PeriodEnd"),
+                //}).ToListAsync();
+                //foreach (var data in datas)
+                //{
+                //    Console.WriteLine(data.Id + " " + data.Name + " | " + data.PeriodStart + " - " + data.PeriodEnd);
+                //}
+
+                //TemporalBetween - baslangic daxil deyil, bitis daxildi
+                //var startDate = new DateTime(2024, 04, 30, 13, 20, 33);
+                //var endDate = new DateTime(2024, 04, 30, 14, 20, 33);
+                //var datas = await context.EmployeeTTs.TemporalBetween(startDate, endDate).Select(p => new
+                //{
+                //    p.Id,
+                //    p.Name,
+                //    PeriodStart = EF.Property<DateTime>(p, "PeriodStart"),
+                //    PeriodEnd = EF.Property<DateTime>(p, "PeriodEnd"),
+                //}).ToListAsync();
+                //foreach (var data in datas)
+                //{
+                //    Console.WriteLine(data.Id + " " + data.Name + " | " + data.PeriodStart + " - " + data.PeriodEnd);
+                //}
+
+                //TemporalBetween - baslangic ve bitis daxildi
+
+
+                //Silinmis datani geri qaytarmaq - silinme vaxti tapilir,sonra TemporalAsOf ile geri qaytarilir, history table dan dasinir
+                //..esas table a
+
+                //ilk once Identity Insert ozelligini aktivlesdirmek lazimdir - Set Identity_Insert On !!(sql server autoincrement geregi default sondurur bunu)
+                var dateOfDelete = await context.EmployeeTTs.TemporalAll()
+                    .Where(e => e.Id == 3)
+                    .OrderByDescending(e => EF.Property<DateTime>(e, "PeriodEnd"))
+                    .Select(e => EF.Property<DateTime>(e, "PeriodEnd"))
+                    .FirstAsync();
+                var deletedEmployee = await context.EmployeeTTs.TemporalAsOf(dateOfDelete.AddMilliseconds(-1))
+                    .FirstOrDefaultAsync(e=>e.Id==3);
+                //Console.WriteLine(deletedEmployee.Name);
+                //Console.ReadLine();
+                await context.AddAsync(deletedEmployee);
+                await context.Database.OpenConnectionAsync();
+                await context.Database.ExecuteSqlInterpolatedAsync($"set identity_insert dbo.EmployeesTT on");
+                await context.SaveChangesAsync();
+                await context.Database.ExecuteSqlInterpolatedAsync($"set identity_insert dbo.EmployeesTT off");
+
+
+
 
 
             }
@@ -1155,44 +1259,54 @@ namespace EfCoreShadowProperties
             //for exm: Execution Time: 5730 milliseconds / 5.73
             Console.ResetColor();
         }
-        //----------------
-        //Owned Entity
-        public class Employee
+
+        //Temporal Table
+        public class EmployeeTT
         {
             public int Id { get; set; }
-            //public string Name { get; set; }
-            //public string MiddleName { get; set; }
-            //public string LastName { get; set; }
-            //public string StreetAddress { get; set; }
-            //public string Location { get; set; }
-            public bool IsActive { get; set; }
-            public EmployeeName EmployeeName { get; set; }
-            public Address Address { get; set; }
-
-            public ICollection<EmployeeOrder> EmployeeOrders { get; set; }
-        }
-        //[Owned]
-        public class EmployeeName
-        {
             public string Name { get; set; }
-            public string MiddleName { get; set; }
-            public string LastName { get; set; }
+            public string Surname { get; set; }
         }
-        //[Owned]
-        public class Address
-        {
-            public string StreetAddress { get; set; }
-            public string Location { get; set; }
-        }
-        public class EmployeeOrder
-        {
-            //public int Id { get; set; }
-            public string OrderDate { get; set; }
-            public int Price { get; set; }
 
-            //navigation olmmalidir OwnedMany de
-            //public Employee Employee { get; set; }
-        }
+
+        //----------------
+        ////Owned Entity
+        //public class Employee
+        //{
+        //    public int Id { get; set; }
+        //    //public string Name { get; set; }
+        //    //public string MiddleName { get; set; }
+        //    //public string LastName { get; set; }
+        //    //public string StreetAddress { get; set; }
+        //    //public string Location { get; set; }
+        //    public bool IsActive { get; set; }
+        //    public EmployeeName EmployeeName { get; set; }
+        //    public Address Address { get; set; }
+
+        //    public ICollection<EmployeeOrder> EmployeeOrders { get; set; }
+        //}
+        ////[Owned]
+        //public class EmployeeName
+        //{
+        //    public string Name { get; set; }
+        //    public string MiddleName { get; set; }
+        //    public string LastName { get; set; }
+        //}
+        ////[Owned]
+        //public class Address
+        //{
+        //    public string StreetAddress { get; set; }
+        //    public string Location { get; set; }
+        //}
+        //public class EmployeeOrder
+        //{
+        //    //public int Id { get; set; }
+        //    public string OrderDate { get; set; }
+        //    public int Price { get; set; }
+
+        //    //navigation olmmalidir OwnedMany de
+        //    //public Employee Employee { get; set; }
+        //}
 
 
         //---------------
@@ -1945,19 +2059,23 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<Person>().HasQueryFilter(p=>p.Orders.Count>0);
 
                 //Owned Entities with modelBuilder
-                modelBuilder.Entity<Employee>().OwnsOne(e => e.EmployeeName, builder =>
-                {
-                    builder.Property(e => e.Name).HasColumnName("Name");
-                });
-                modelBuilder.Entity<Employee>().OwnsOne(e => e.Address);
+                //modelBuilder.Entity<Employee>().OwnsOne(e => e.EmployeeName, builder =>
+                //{
+                //    builder.Property(e => e.Name).HasColumnName("Name");
+                //});
+                //modelBuilder.Entity<Employee>().OwnsOne(e => e.Address);
 
-                //OwnsMany
-                modelBuilder.Entity<Employee>().OwnsMany(e=>e.EmployeeOrders,builder=>
-                {
-                    builder.WithOwner().HasForeignKey("OwnedEmployeeId");
-                    builder.Property<int>("Id");
-                    builder.HasKey("Id");
-                });
+                ////OwnsMany
+                //modelBuilder.Entity<Employee>().OwnsMany(e=>e.EmployeeOrders,builder=>
+                //{
+                //    builder.WithOwner().HasForeignKey("OwnedEmployeeId");
+                //    builder.Property<int>("Id");
+                //    builder.HasKey("Id");
+                //});
+
+                //Temporal Table
+                modelBuilder.Entity<EmployeeTT>().ToTable("EmployeesTT", builder => builder.IsTemporal());//IsTemporal olmasa,adi table olacaq
+
 
                 base.OnModelCreating(modelBuilder);
 
@@ -2052,7 +2170,10 @@ namespace EfCoreShadowProperties
             public DbSet<PersonOrder> PersonOrders { get; set; }
 
             //Owned Entity
-            public DbSet<Employee> Employees { get; set; }
+            //public DbSet<Employee> Employees { get; set; }
+
+            //Temporal Table
+            public DbSet<EmployeeTT> EmployeeTTs { get; set; }
 
         }
 
@@ -2075,17 +2196,17 @@ namespace EfCoreShadowProperties
 
 
 //class uzerinden
-public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
-{
-    public void Configure(EntityTypeBuilder<Employee> builder)
-    {
-        builder.OwnsOne(e => e.EmployeeName, builder =>
-        {
-            builder.Property(e => e.Name).HasColumnName("Name");
-        });
-        builder.OwnsOne(e => e.Address);
-    }
-}
+//public class EmployeeConfiguration : IEntityTypeConfiguration<Employee>
+//{
+//    public void Configure(EntityTypeBuilder<Employee> builder)
+//    {
+//        builder.OwnsOne(e => e.EmployeeName, builder =>
+//        {
+//            builder.Property(e => e.Name).HasColumnName("Name");
+//        });
+//        builder.OwnsOne(e => e.Address);
+//    }
+//}
 
 
 

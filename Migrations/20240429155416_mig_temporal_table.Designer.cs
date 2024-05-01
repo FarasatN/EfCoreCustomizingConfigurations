@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    [Migration("20240422161432_mig2")]
-    partial class mig2
+    [Migration("20240429155416_mig_temporal_table")]
+    partial class mig_temporal_table
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -38,6 +38,48 @@ namespace EfCoreCustomizingConfigurations.Migrations
                         .HasColumnType("float");
 
                     b.ToTable("BestSellingStaff");
+                });
+
+            modelBuilder.Entity("EfCoreShadowProperties.Program+EmployeeTT", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("EmployeesTT", (string)null);
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("EmployeesTTHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>
@@ -79,6 +121,9 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.Property<int>("Gender")
                         .HasColumnType("int");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("bit");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -98,6 +143,20 @@ namespace EfCoreCustomizingConfigurations.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.ToTable("PersonOrders");
+                });
+
+            modelBuilder.Entity("EfCoreShadowProperties.Program+PersonOrderCount", b =>
+                {
+                    b.Property<int>("Count")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.ToTable((string)null);
+
+                    b.ToView("vw_PersonOrderCount", (string)null);
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Photo", b =>

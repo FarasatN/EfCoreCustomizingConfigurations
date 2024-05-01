@@ -37,7 +37,7 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.ToTable("BestSellingStaff");
                 });
 
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Employee", b =>
+            modelBuilder.Entity("EfCoreShadowProperties.Program+EmployeeTT", b =>
                 {
                     b.Property<int>("Id")
                         .ValueGeneratedOnAdd()
@@ -45,12 +45,38 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("bit");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("PeriodEnd")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodEnd");
+
+                    b.Property<DateTime>("PeriodStart")
+                        .ValueGeneratedOnAddOrUpdate()
+                        .HasColumnType("datetime2")
+                        .HasColumnName("PeriodStart");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");
 
-                    b.ToTable("Employees");
+                    b.ToTable("EmployeesTT", (string)null);
+
+                    b.ToTable(tb => tb.IsTemporal(ttb =>
+                            {
+                                ttb.UseHistoryTable("EmployeesTTHistory");
+                                ttb
+                                    .HasPeriodStart("PeriodStart")
+                                    .HasColumnName("PeriodStart");
+                                ttb
+                                    .HasPeriodEnd("PeriodEnd")
+                                    .HasColumnName("PeriodEnd");
+                            }));
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>
@@ -151,105 +177,6 @@ namespace EfCoreCustomizingConfigurations.Migrations
                         .IsUnique();
 
                     b.ToTable("Photos");
-                });
-
-            modelBuilder.Entity("EfCoreShadowProperties.Program+Employee", b =>
-                {
-                    b.OwnsOne("EfCoreShadowProperties.Program+Address", "Address", b1 =>
-                        {
-                            b1.Property<int>("EmployeeId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("Location")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("StreetAddress")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.HasKey("EmployeeId");
-
-                            b1.ToTable("Employees");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EmployeeId");
-                        });
-
-                    b.OwnsOne("EfCoreShadowProperties.Program+EmployeeName", "EmployeeName", b1 =>
-                        {
-                            b1.Property<int>("EmployeeId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("LastName")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("MiddleName")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<string>("Name")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)")
-                                .HasColumnName("Name");
-
-                            b1.HasKey("EmployeeId");
-
-                            b1.ToTable("Employees");
-
-                            b1.WithOwner()
-                                .HasForeignKey("EmployeeId");
-                        });
-
-                    b.OwnsMany("EfCoreShadowProperties.Program+EmployeeOrder", "EmployeeOrders", b1 =>
-                        {
-                            b1.Property<int>("Id")
-                                .ValueGeneratedOnAdd()
-                                .HasColumnType("int");
-
-                            SqlServerPropertyBuilderExtensions.UseIdentityColumn(b1.Property<int>("Id"));
-
-                            b1.Property<int>("EmployeeId")
-                                .HasColumnType("int");
-
-                            b1.Property<string>("OrderDate")
-                                .IsRequired()
-                                .HasColumnType("nvarchar(max)");
-
-                            b1.Property<int>("OwnedEmployeeId")
-                                .HasColumnType("int");
-
-                            b1.Property<int>("Price")
-                                .HasColumnType("int");
-
-                            b1.HasKey("Id");
-
-                            b1.HasIndex("EmployeeId");
-
-                            b1.HasIndex("OwnedEmployeeId");
-
-                            b1.ToTable("EmployeeOrder");
-
-                            b1.HasOne("EfCoreShadowProperties.Program+Employee", "Employee")
-                                .WithMany()
-                                .HasForeignKey("EmployeeId")
-                                .OnDelete(DeleteBehavior.Cascade)
-                                .IsRequired();
-
-                            b1.WithOwner()
-                                .HasForeignKey("OwnedEmployeeId");
-
-                            b1.Navigation("Employee");
-                        });
-
-                    b.Navigation("Address")
-                        .IsRequired();
-
-                    b.Navigation("EmployeeName")
-                        .IsRequired();
-
-                    b.Navigation("EmployeeOrders");
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Order", b =>

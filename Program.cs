@@ -1,5 +1,6 @@
 ﻿using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -1232,23 +1233,87 @@ namespace EfCoreShadowProperties
                 //..esas table a
 
                 //ilk once Identity Insert ozelligini aktivlesdirmek lazimdir - Set Identity_Insert On !!(sql server autoincrement geregi default sondurur bunu)
-                var dateOfDelete = await context.EmployeeTTs.TemporalAll()
-                    .Where(e => e.Id == 3)
-                    .OrderByDescending(e => EF.Property<DateTime>(e, "PeriodEnd"))
-                    .Select(e => EF.Property<DateTime>(e, "PeriodEnd"))
-                    .FirstAsync();
-                var deletedEmployee = await context.EmployeeTTs.TemporalAsOf(dateOfDelete.AddMilliseconds(-1))
-                    .FirstOrDefaultAsync(e=>e.Id==3);
-                //Console.WriteLine(deletedEmployee.Name);
-                //Console.ReadLine();
-                await context.AddAsync(deletedEmployee);
-                await context.Database.OpenConnectionAsync();
-                await context.Database.ExecuteSqlInterpolatedAsync($"set identity_insert dbo.EmployeesTT on");
-                await context.SaveChangesAsync();
-                await context.Database.ExecuteSqlInterpolatedAsync($"set identity_insert dbo.EmployeesTT off");
+                //var dateOfDelete = await context.EmployeeTTs.TemporalAll()
+                //    .Where(e => e.Id == 3)
+                //    .OrderByDescending(e => EF.Property<DateTime>(e, "PeriodEnd"))
+                //    .Select(e => EF.Property<DateTime>(e, "PeriodEnd"))
+                //    .FirstAsync();
+                //var deletedEmployee = await context.EmployeeTTs.TemporalAsOf(dateOfDelete.AddMilliseconds(-1))
+                //    .FirstOrDefaultAsync(e=>e.Id==3);
+                ////Console.WriteLine(deletedEmployee.Name);
+                ////Console.ReadLine();
+                //await context.AddAsync(deletedEmployee);
+                //await context.Database.OpenConnectionAsync();
+                //await context.Database.ExecuteSqlInterpolatedAsync($"set identity_insert dbo.EmployeesTT on");
+                //await context.SaveChangesAsync();
+                //await context.Database.ExecuteSqlInterpolatedAsync($"set identity_insert dbo.EmployeesTT off");
 
 
+                //-----------------------------------------------------------
+                //Connection Resiliency - ister istemez db den qopuslar ola biler,bunun qarsisini almaq ucundur
+                //ve qopan zaman iten sorgulari yeniden tekrar edir
 
+                //1. novbede connectionun qopmamasindan emin oluruq, tekrar tekrr yoxlayiriq
+                //2. elaqe itenden sonra ora qeder emelliyatlar tekrar yoxlanilir, ve icra olunur(Execution Stategy)
+                //..yeni qopan transaction basdan icra olunur
+
+                //Bunun ucun lazim olan metodlar:
+
+                //EnableRetryOnFailure - baglanti qopdugu teqdirde bununla tekrar baglanti qura bilirik
+                while (true)//bu formada xeta olsa, tekrar elaqe qurmalidir
+                {
+                    await Task.Delay(2000);
+                    var empls = await context.EmployeeTTs.ToListAsync();
+                    foreach (var empl in empls)
+                    {
+                        Console.WriteLine(empl.Name);
+                    }
+                    Console.WriteLine("*************");
+                }
+
+                //EnableRetryOnFailure - 30 saniyede 1, 6 defe tekrar-tekrar connectionu yoxlayacaq, xetani ancaq o zaman verecek
+
+                //MaxRetryCount - yeniden connection yaradilmasi durumunun nece defe olacagini teyin edir
+                //default degeri 6 dir
+
+                //MaxRetryDelay - yeniden baglanma periodudur
+                //default degeri 30 dur
+
+                //Execution Strategies - istesek connection qopma durumunu customize ede bilerik, meselen elaqe itende mail gondersin
+                //.. yaxud, loglaya bilersen,
+
+                //Eger EnableRetryOnFailure -i ist. edirsense, Default Execution Strategy hesab olunur; maxretrycount: 6, delay: 30
+                //bunun wcwn parametrsiz overload olunur bu metod
+
+                //ayrica classda teyin ede bilerik
+
+                //Bezen connection berpa etmek kifayet deyil, hem de basdan butun emeliyyatlar icra olunmalidir
+
+                //Execute metodu, icerisine vermis oldugumuz kodlari commit edene kimi icra edecekdir, eger
+                //baglanti itibse, geri gelende Execute icindekiler tekrar basdan islenecek
+                //ve belece itki olmayacaq
+
+                //var strategy = context.Database.CreateExecutionStrategy();
+                //await strategy.ExecuteAsync(async()=>
+                //{
+                //    using var transaction = await context.Database.BeginTransactionAsync();
+                //    await context.EmployeeTTs.AddAsync(new() 
+                //    { 
+                //        Name = "Vugar",
+                //        Surname = "Bakhisov"
+                //    });
+                //    await context.SaveChangesAsync();
+                //    await context.EmployeeTTs.AddAsync(new()
+                //    {
+                //        Name = "Vugar",
+                //        Surname = "Bakhisov"
+                //    });
+                //    await context.SaveChangesAsync();
+
+                //    await transaction.CommitAsync();
+                //});
+
+                //besi db lerde periodik olaraq sifre deyisir, bunu ExecutionStrategy ile etmek olar, cari sifreni avtomatik ist. etsin
 
 
             }
@@ -2102,9 +2167,31 @@ namespace EfCoreShadowProperties
                 .AddConsole());
             protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
-                optionsBuilder
-                    //.UseLazyLoadingProxies()
-                    .UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;");
+                //# docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=87654321Fn@' -e 'MSSQL_PID_Express' -p 1439:1433 --name mssql --hostname mssql -d mcr.microsoft.com/mssql/server:2022-latest
+                //# Server=localhost,1439;Database=mssql;User=sa;Password=87654321F@;
+                //# Server=localhost,1439;Initial Catalog=mssql;Integrated Security=True;User Id=sa;Password=87654321Fn@;
+                //TrustServerCertificate=True; - for connection problems, windows authentication
+                //# docker start mssql
+                //# docker stop mssql
+
+                //----------------------------------
+                //DEFAULT EXECUTION STRATEGY
+                //optionsBuilder
+                //    //.UseLazyLoadingProxies()
+                //    //.UseSqlServer("Server=(localdb)\\mssqllocaldb;Database=EfCoreCustomizingConfigurations;Trusted_Connection=True;", builder=>builder.EnableRetryOnFailure());
+                //    //.UseSqlServer("Server=localhost,1439;Database=mssql;User=sa;Password=87654321Fn@;", builder => builder.EnableRetryOnFailure());
+                //    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;", builder => builder.EnableRetryOnFailure(
+                //        maxRetryCount: 5,
+                //        maxRetryDelay: TimeSpan.FromSeconds(15),
+                //        errorNumbersToAdd: new[] {4060}))
+                //    .LogTo(
+                //        filter: (eventId, level) => eventId.Id == CoreEventId.ExecutionStrategyRetrying,
+                //        logger: eventData =>
+                //        {
+                //            Console.WriteLine($"Retrying connection again ...");
+                //        });
+
+                //30 saniyede 1, 6 defe tekrar-tekrar connectionu yoxlayacaq, xetani ancaq o zaman verecek
                 //optionsBuilder.UseLazyLoadingProxies();
 
                 //logging - default olaraq debug daxil ondan ustu loglayir
@@ -2117,6 +2204,14 @@ namespace EfCoreShadowProperties
                 //optionsBuilder.LogTo(async message => await _log.WriteLineAsync(message))
                 //    .EnableSensitiveDataLogging()
                 //    .EnableDetailedErrors();
+
+                //----------------------------------------
+                //CUSTOM EXECUTION STRATEGY
+                optionsBuilder
+                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;",
+                    builder => builder.ExecutionStrategy(dependencies=>new CustomExecutionStrategy(dependencies,5,TimeSpan.FromSeconds(15))));
+                        
+
 
                 //Query Logger
                 optionsBuilder.UseLoggerFactory(loggerFactory);
@@ -2209,6 +2304,25 @@ namespace EfCoreShadowProperties
 //}
 
 
+//Custom Execution Strategy
+public class CustomExecutionStrategy : ExecutionStrategy
+{
+    public CustomExecutionStrategy(DbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(context, maxRetryCount, maxRetryDelay)
+    {
+    }
+
+    public CustomExecutionStrategy(ExecutionStrategyDependencies dependencies, int maxRetryCount, TimeSpan maxRetryDelay) : base(dependencies, maxRetryCount, maxRetryDelay)
+    {
+    }
+
+    int retryCount = 0;
+    protected override bool ShouldRetryOn(Exception exception)
+    {
+        //Yeniden baglanilma durumu
+        Console.WriteLine($"#{++retryCount}. Baglanti tekrar qrurulur...");
+        return true;
+    }
+}
 
 
 

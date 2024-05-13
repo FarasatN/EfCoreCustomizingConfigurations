@@ -1260,16 +1260,16 @@ namespace EfCoreShadowProperties
                 //Bunun ucun lazim olan metodlar:
 
                 //EnableRetryOnFailure - baglanti qopdugu teqdirde bununla tekrar baglanti qura bilirik
-                while (true)//bu formada xeta olsa, tekrar elaqe qurmalidir
-                {
-                    await Task.Delay(2000);
-                    var empls = await context.EmployeeTTs.ToListAsync();
-                    foreach (var empl in empls)
-                    {
-                        Console.WriteLine(empl.Name);
-                    }
-                    Console.WriteLine("*************");
-                }
+                //while (true)//bu formada xeta olsa, tekrar elaqe qurmalidir
+                //{
+                //    await Task.Delay(2000);
+                //    var empls = await context.EmployeeTTs.ToListAsync();
+                //    foreach (var empl in empls)
+                //    {
+                //        Console.WriteLine(empl.Name);
+                //    }
+                //    Console.WriteLine("*************");
+                //}
 
                 //EnableRetryOnFailure - 30 saniyede 1, 6 defe tekrar-tekrar connectionu yoxlayacaq, xetani ancaq o zaman verecek
 
@@ -1313,7 +1313,72 @@ namespace EfCoreShadowProperties
                 //    await transaction.CommitAsync();
                 //});
 
-                //besi db lerde periodik olaraq sifre deyisir, bunu ExecutionStrategy ile etmek olar, cari sifreni avtomatik ist. etsin
+                //bezi db lerde periodik olaraq sifre deyisir, bunu ExecutionStrategy ile etmek olar, cari sifreni avtomatik ist. etsin
+
+
+
+
+                //=====================================
+                //Data Concurrency - data tutarsizligi, birden cox client eyni anda eyni data ile isleyir
+                //Data Concurrency de bu durumun qarsisini alir
+                //Data Tutarsizlihi demek o anda istifadecileri yaniltmaq demekdir
+
+                //yeni, eyni vaxtda xebersiz datani deyismek hali ola biler
+
+                //Stale & Dirty (Boyat ve Cirkli)
+
+                //Stale - zamani kecmis, update olmamis - eger update olunan data front da update olunmursa, stale olur
+                //Dirty - eslinde Ahmet olan data db de Mehmet olursa
+
+                //Last in Wins (Son gelen udur) - axirinci kim deyisibse, o qalir
+
+                //Pessimistic Lock - bir tansaction zamani elde edilen veriler uzerinde ferqli sorgularla deyisiklik edilmesini
+                //..engellemek ucun elaqeli datalarin kilitlenmesi(locking) ederek deyisikliye qarsi muqavimet yaradilmasini ifade eden yontemdir
+                //bu transactionun commit ve rollback edilmesi ile serhedlenir ancaq
+
+                //Deadlock - kilidlenib sonra ilisib qalmaq demekdir, db seviyyesinde yaranan xetaya gore, yaxud dongusel olaraq
+                //..kilitlenme durumudur
+
+                //Pessimistic Lock da bunu yasamaniz boyuk ehtimaldir, ona gore de yaxsi dusunub secim etmeli
+                //await using var transaction = await context.Database.BeginTransactionAsync();
+                //////var data = await context.EmployeeTTs.FromSql($"select * from EmployeesTT").ToListAsync();
+                //////var data = await context.Persons.FromSql($"select * from Persons with (xlock) where PersonId=1").ToListAsync();
+                //var data = await context.Photos.FromSql($"select * from Photos with (xlock) where Id=1").ToListAsync();
+                //Console.WriteLine(data);//break point qoyuruq burda
+                //await transaction.CommitAsync();
+
+                //mssql de de eyni komandani cagiririq, bu bitmemis bos gelir o sorgu, cunki lock olub
+                //Is heyatinda demek olar hec ist. etemeyecksen bunu yerine optimistic tercih edilir
+
+                //Optimistic Lock - bir datanin dtale olub olmadigini teyin edir, burda lock etmirik birbasa daatani, 
+                //burda deyismek mumkundur arxa planda datani, amma versiyalanir deyisilen datalar nomre ile
+                //in memory ile dbdeki qarsilastirilir bu versiya nomresi ile uygun gelmirse xeta atir
+                //bu versioning hem reqemsal ile, hem de text ile ola biler, amma reqemsal tercih olunur
+                //sorgu zamani versiya nomresi de cekilir in-memory ye, ardindan deyisiklik edirikse, burdaki ve bazadaki nomreni muqayise edirik
+                //..eger muqayise dogrulanirsa, demeli datada tutarliliq var, yoxdursa, xeta atacaq ve emeliyyat yarimciq qalacaq
+
+                //Ef Core bunu asagidaki yollarla heyata kecirir:
+
+                //Property Based Configuration (ConcurrencyCheck Attribute) - tutarsizligin yoxlainlamis istenen property ler 
+                //.. ConcurrencyCheck ile isaretlernir ve bunun neticesinde her bir entity instanci ucun in-memory de bir token degeri 
+                //.. yaradilir ve bu Ef Core terfinden yoxlanilacaq ve eger deyisiklik varsa token de deyisecek ve xata atacaq, deyisikilik yoxdursa isleyecek
+
+                //var photos = await context.Photos.FindAsync(1);
+                ////Console.WriteLine(photos);
+                //context.Entry(photos).State = EntityState.Modified;
+                //await context.SaveChangesAsync();//burda dayananda basqa yerden(mes: sql serverden ) datani deyisek, xeta atacaq
+
+                //ConcurrencyCheck Fluent api de de mumkundur
+
+
+                //RowVersion Column - burdaa ise db de her bir setire qarsiliq versiya bilgisi fiziksel olaraq yaradilir
+                //bu columnda butun columnlarin versiya nomreleri saxlanilir
+                //var photos = await context.Photos.FindAsync(1);
+                ////Console.WriteLine(photos);
+                //context.Entry(photos).State = EntityState.Modified;
+                //await context.SaveChangesAsync();//burda dayananda basqa yerden(mes: sql serverden ) datani deyisek, xeta atacaq
+
+                //bunu da Fluent Api ile etmek mumkundur
 
 
             }
@@ -1693,9 +1758,15 @@ namespace EfCoreShadowProperties
         public class Photo
         {
             public int Id { get; set; }
+            //[ConcurrencyCheck]
             public string FilePath { get; set; }
+            //[ConcurrencyCheck]
             public int PersonId { get; set; }
+
             public Person Person { get; set; }
+            //[Timestamp]
+            //public byte[] RowVersion { get; set; }
+            //bele bir sey gorende EfCore, bunu data concurrency olaraq qebul edir
         }
 
         [NotMapped]
@@ -2142,6 +2213,11 @@ namespace EfCoreShadowProperties
                 modelBuilder.Entity<EmployeeTT>().ToTable("EmployeesTT", builder => builder.IsTemporal());//IsTemporal olmasa,adi table olacaq
 
 
+                //ConcurrencyCheck FluentApi
+                modelBuilder.Entity<Photo>().Property(p => p.FilePath).IsConcurrencyToken();
+                //RowVersion FluentApi
+                modelBuilder.Entity<Photo>().Property(p => p.FilePath).IsRowVersion();    
+
                 base.OnModelCreating(modelBuilder);
 
             }
@@ -2208,8 +2284,8 @@ namespace EfCoreShadowProperties
                 //----------------------------------------
                 //CUSTOM EXECUTION STRATEGY
                 optionsBuilder
-                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;",
-                    builder => builder.ExecutionStrategy(dependencies=>new CustomExecutionStrategy(dependencies,5,TimeSpan.FromSeconds(15))));
+                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;");
+                    //,builder => builder.ExecutionStrategy(dependencies=>new CustomExecutionStrategy(dependencies,5,TimeSpan.FromSeconds(15))));
                         
 
 
@@ -2305,24 +2381,24 @@ namespace EfCoreShadowProperties
 
 
 //Custom Execution Strategy
-public class CustomExecutionStrategy : ExecutionStrategy
-{
-    public CustomExecutionStrategy(DbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(context, maxRetryCount, maxRetryDelay)
-    {
-    }
+//public class CustomExecutionStrategy : ExecutionStrategy
+//{
+//    public CustomExecutionStrategy(DbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(context, maxRetryCount, maxRetryDelay)
+//    {
+//    }
 
-    public CustomExecutionStrategy(ExecutionStrategyDependencies dependencies, int maxRetryCount, TimeSpan maxRetryDelay) : base(dependencies, maxRetryCount, maxRetryDelay)
-    {
-    }
+//    public CustomExecutionStrategy(ExecutionStrategyDependencies dependencies, int maxRetryCount, TimeSpan maxRetryDelay) : base(dependencies, maxRetryCount, maxRetryDelay)
+//    {
+//    }
 
-    int retryCount = 0;
-    protected override bool ShouldRetryOn(Exception exception)
-    {
-        //Yeniden baglanilma durumu
-        Console.WriteLine($"#{++retryCount}. Baglanti tekrar qrurulur...");
-        return true;
-    }
-}
+//    int retryCount = 0;
+//    protected override bool ShouldRetryOn(Exception exception)
+//    {
+//        //Yeniden baglanilma durumu
+//        Console.WriteLine($"#{++retryCount}. Baglanti tekrar qrurulur...");
+//        return true;
+//    }
+//}
 
 
 

@@ -1,23 +1,32 @@
-﻿using Microsoft.Data.SqlClient;
+﻿using Azure;
+using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
+using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
+using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
+using Microsoft.VisualBasic;
+using System;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Diagnostics.Metrics;
+using System.Linq.Expressions;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Reflection.Emit;
+using System.Reflection.Metadata;
 using System.Runtime.CompilerServices;
 using System.Runtime.Intrinsics.X86;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
+using System.Text.Json;
 using static EfCoreShadowProperties.Program;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
@@ -1381,6 +1390,94 @@ namespace EfCoreShadowProperties
                 //bunu da Fluent Api ile etmek mumkundur
 
 
+                //----------------------------------------------
+                //Value Conversions - Select sorgularinda gelen datalar convert olunub gelir avtomatik olaraq
+                //ama Update ve Insert sorgularinda da mumkundur
+
+                //HasConversion -  EfCore uzerinden value converter edir
+                //misal: Gender (M,F) -> (Male,Female)
+
+                //var emp = await context.EmployeeTTs.ToListAsync();
+                //Console.WriteLine();
+
+                //Real Gender field
+                ////var emp = new EmployeeTT() { Name = "Rafiqa2", Surname = "Novruzova", Gender = "F", Gender2 = 0 };//same as below
+                //var emp = new EmployeeTT() { Name = "Rafiqa", Surname = "Novruzova", Gender = "F", Gender2 = Gender.Female };
+
+                //await context.EmployeeTTs.AddAsync(emp);
+                //await context.SaveChangesAsync();
+                //var _emp = context.EmployeeTTs.FindAsync(emp.Id);
+                //Console.WriteLine();
+
+                //NORMALDA INT TIPINDE GENDER ENUM MIGRATE OLUNACAQDI, EGER CONVERSION ETMESEYDIK,
+                //.. AMMA CONVERIONU FLUENT API DE TOSTRING ILE QEYD ETDIYIMIZ UCUN, BAZAYA DA STRING GEDECEK!!!
+
+                //ya da yuxaridakini ValueConverter classi uzerinden etmek olar
+                //var emp = new EmployeeTT() { Name = "Rafiqa3", Surname = "Novruzova", Gender = "F", Gender2 = Gender.Female };
+                //await context.EmployeeTTs.AddAsync(emp);
+                //await context.SaveChangesAsync();
+                //var _emp = context.EmployeeTTs.FindAsync(emp.Id);
+                //Console.WriteLine();
+
+                //Custom ValueConverter classi - ValueConverterden inherit edir
+
+                //!!!!!!!!!!!!!!!!!very important
+                //difference (string) vs ToString()
+                //.ToString() will try to convert any other type to string by calling the object's ToString() method.
+                //For most built-in types this will return the object converted to a string,
+                //but for custom types without a specific .ToString() method, it will return the name of the type of the object.
+                //Another important thing to keep in mind is that if the object is null,
+                //calling .ToString() will throw an exception, but as string will simply return null.
+
+                //object o1 = "somestring";
+                //object o2 = 1;
+                //object o3 = new object();
+                //object o4 = null;
+
+                //string s1 = o1 as string;  // returns "somestring"
+                //string s2 = o1.ToString(); // returns "somestring"
+                //string s3 = o2 as string;  // returns null
+                //string s4 = o2.ToString(); // returns "1"
+                //string s5 = o3 as string;  // returns null
+                //string s6 = o3.ToString(); // returns "System.Object"
+                //string s7 = o4 as string;  // returns null
+                //string s8 = o4.ToString(); // throws NullReferenceException
+
+                //The difference between as string and(string) in C# lies in their behavior and intended usage:
+
+                //1. as Operator:
+                //The as operator is used for safe type conversion or casting.It attempts to cast an object to a specified type, and if the cast fails, it returns null instead of throwing an exception.
+                //It is primarily used for reference types (classes and interfaces).
+                //If the object being casted is not of the specified type or cannot be casted to that type, the result of the as operation is null.
+                //It does not work with value types(structs), such as int, float, enum, etc.
+                //It's commonly used in scenarios where you are unsure about the type of an object and want to handle both successful and unsuccessful casts gracefully.
+
+                //2. Explicit Cast(string):
+                //The explicit cast(string) is used to explicitly convert an object to the specified type.If the cast fails due to an incompatible type, it throws an InvalidCastException.
+                //It works with both reference types and value types.
+                //When casting reference types, it is equivalent to the as operator, but it does not handle failure gracefully; instead, it throws an exception.
+                //It's commonly used when you are certain about the type of an object and want to handle any failure explicitly.
+
+                //!!!!!!!!!!!!!!!!!very important
+
+
+                //Built-in Converters - for basic conversions
+
+                //BoolToZeroOneConverter- 
+                //BoolToStringConverter- 
+                //BoolToTwoValuesConverter- 
+
+                //euni qaydada coxlu BuiltIn metodlar var
+
+
+                //Primitive Collections Convertions
+                //public List<string> Titles; - bu formada primitive tipi migrate etsen xeta verecek
+                //..bunun qarsini almaq ucun serilizasiya etmek ve conversiya etmek lazimdir, json ile
+
+
+
+
+
             }
             //****************************
             //executig stopped
@@ -1390,12 +1487,34 @@ namespace EfCoreShadowProperties
             Console.ResetColor();
         }
 
+        ////Custom Value Converter
+        //public class GenderConverter : ValueConverter<Gender, string>
+        //{
+        //    public GenderConverter()
+        //        : base(
+        //              //insert,update
+        //              g => g.ToString()
+        //              ,
+        //              //select
+        //              g => (Gender)Enum.Parse(typeof(Gender), g)
+        //              )
+        //    {
+        //    }
+        //}
+
         //Temporal Table
         public class EmployeeTT
         {
             public int Id { get; set; }
             public string Name { get; set; }
             public string Surname { get; set; }
+            public string Gender { get; set; }
+            public Gender Gender2 { get; set; }
+            //public GenderConverter Gender3 { get; set; }
+
+            public bool Married { get; set; } = false;//fluent api de yazilir conf.i
+
+            public List<string>? Titles { get; set; }
         }
 
 
@@ -1741,8 +1860,8 @@ namespace EfCoreShadowProperties
 
         public enum Gender
         {
-            Man,
-            Woman
+            Male,
+            Female
         }
 
         public class Order
@@ -2216,7 +2335,70 @@ namespace EfCoreShadowProperties
                 //ConcurrencyCheck FluentApi
                 modelBuilder.Entity<Photo>().Property(p => p.FilePath).IsConcurrencyToken();
                 //RowVersion FluentApi
-                modelBuilder.Entity<Photo>().Property(p => p.FilePath).IsRowVersion();    
+                modelBuilder.Entity<Photo>().Property(p => p.FilePath).IsRowVersion();
+
+                //ValueConverter - simple way for Gender field
+                modelBuilder.Entity<EmployeeTT>().Property(p => p.Gender)
+                    .HasConversion(
+                        //Insert - Update
+                        g => g.ToUpper()
+                      ,
+                        //Select
+                        g => g == "M" ? "Male" : "Female"
+                    );
+
+                //ValueConverter - real Gender field example
+                //modelBuilder.Entity<EmployeeTT>().Property(p => p.Gender2)
+                //    .HasConversion(
+                //        //Insert - Update
+                //        g => g.ToString()
+                //        //g => (int)g
+                //      ,
+                //        //Select
+                //        g => (Gender)Enum.Parse(typeof(Gender), g)
+                //    );
+
+                //ValueConverter classi uzerinden
+                ValueConverter<Gender, string> converter = new(
+                            //Insert - Update
+                            g => g.ToString()
+                            //g => (int)g
+                          ,
+                            //Select
+                            g => (Gender)Enum.Parse(typeof(Gender), g)
+                    );
+                modelBuilder.Entity<EmployeeTT>().Property(p => p.Gender2)
+                   .HasConversion(converter);
+
+                ////Custom ValueConverter classi uzerinden
+                //modelBuilder.Entity<EmployeeTT>().Property(p => p.Gender3)
+                //   //.HasConversion<GenderConverter>();//not worked
+                //   .HasConversion(new GenderConverter());
+
+                //BoolToZeroOneConverter
+                modelBuilder.Entity<EmployeeTT>().Property(p => p.Married)
+                    .HasConversion<BoolToZeroOneConverter<int>>();
+
+                ////BoolToStringConverter
+                //BoolToStringConverter conv2 = new("Subay","Evli");
+                //modelBuilder.Entity<EmployeeTT>().Property(p => p.Married)
+                //    .HasConversion(conv2);
+
+                ////BoolToTwoValuesConverter
+                //BoolToTwoValuesConverter<char> conv3 = new('S', 'E');
+
+                modelBuilder.Entity<EmployeeTT>().Property(p => p.Titles)
+                    .HasConversion(
+                            //Insert - Update
+                            t => JsonSerializer.Serialize(t, (JsonSerializerOptions)null)
+                            //g => (int)g
+                          ,
+                            //Select
+                          t => JsonSerializer.Deserialize<List<string>>(t, (JsonSerializerOptions)null)
+
+                    ); 
+
+
 
                 base.OnModelCreating(modelBuilder);
 

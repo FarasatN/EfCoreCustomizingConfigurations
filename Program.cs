@@ -27,6 +27,7 @@ using System.Runtime.Intrinsics.X86;
 using System.Security.AccessControl;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.Json;
+using System.Transactions;
 using static EfCoreShadowProperties.Program;
 using static Microsoft.EntityFrameworkCore.DbLoggerCategory.Database;
 
@@ -1474,8 +1475,111 @@ namespace EfCoreShadowProperties
                 //public List<string> Titles; - bu formada primitive tipi migrate etsen xeta verecek
                 //..bunun qarsini almaq ucun serilizasiya etmek ve conversiya etmek lazimdir, json ile
 
+                //Json Data Conversion for collection data
+                //var emp = new EmployeeTT()
+                //{
+                //    Name = "Farasat",
+                //    Surname = "Novruzov",
+                //    Gender = "M",
+                //    Gender2 = Gender.Male,
+                //    Married = false,
+                //    Titles = new()
+                //    {
+                //        "Developer",
+                //        "Engineer",
+                //        "Computer Scientist"
+                //    }
+                //};
+                //await context.EmployeeTTs.AddAsync(emp);
+                //await context.SaveChangesAsync();
+
+                //var _emp = await context.EmployeeTTs.FindAsync(emp.Id);
+                //Console.WriteLine();
+
+                //.Net 6-dan once null degerlerin convertionu desteklenmirdi
 
 
+                //================================================
+                //Transactions - mueyyen bir ardiciliiq cercivesinde emeliyyatlarin aparilmasi ve xeta bas veren zaman
+                //.. geri qaytarilmasini heyata keciren bir prosesdir (commit, rollback)
+                //esas meqsed data tutarsizgliginin qarsini almaqdir
+
+
+                //Default Transaction - SaveChanges ozu default bir transaction islemidir, xeta yaransa butun islemler geri alinir, commit olmur
+                //await context.SaveChangesAsync();
+
+                //Manual Transaction - BeginTransaction
+                //IDbContextTransaction transaction = await context.Database.BeginTransactionAsync();
+                //var empl = new EmployeeTT() { Name = "Mardan", Surname = "Novruzov", Married = false, Gender="M",Gender2=Gender.Male };
+                //await context.AddAsync(empl);
+                //await context.SaveChangesAsync();//begin oldugu ucucn savechanges islese de heleki commit gozleyecek
+                ////yeni, manual transaction varsa, savechanges yalniz execute ucundur
+
+                //await transaction.CommitAsync();//commit etmesen, avtomatik rollback olunacaq
+
+                //Savepoints - EfCore 5.0 ile gelib,transaction icinde geri donus olunabilecek noqteleri ifade edir
+
+                //CreateSavepoint - transaction icinde geri donus noqtesi yaradir ifade edir
+
+                //RollbackToSavepoint - transaction icinde herhansi bir geri donus noqtesine(Savepoint) rollback edir
+
+                //IDbContextTransaction transaction = await context.Database.BeginTransactionAsync();
+
+                //var em1 = await context.EmployeeTTs.FindAsync(1);
+                //var em4 = await context.EmployeeTTs.FindAsync(4);
+                //context.EmployeeTTs.RemoveRange(em1,em4);
+                //await context.SaveChangesAsync();
+
+                //await transaction.CreateSavepointAsync("t1");
+
+                //var em5 = await context.EmployeeTTs.FindAsync(5);
+                //context.EmployeeTTs.Remove(em5);
+                //await context.SaveChangesAsync();
+
+                //await transaction.RollbackToSavepointAsync("t1");
+
+                //await transaction.CommitAsync();
+
+                //istediyimiz qeder SavePoint istifade ede bilerik 
+
+
+                //TransactionScope - transaction emeliyyatlarini bir qrup formasinda icra edir, ADO.NET ile de ist. edilir
+                //using TransactionScope transactionScope = new();
+                ////db emeliyyatlari..
+                ////...
+                ////..
+                //transactionScope.Complete();//eger rollback edeceksen, complete i sadece cagirmamaq lazimdir
+
+                //example:
+                // Create a new TransactionScope
+                //using (var scope = new TransactionScope(TransactionScopeOption.Required,
+                //                                        new TransactionOptions { IsolationLevel = IsolationLevel.ReadCommitted },
+                //                                        TransactionScopeAsyncFlowOption.Enabled))
+                //{
+                //    try
+                //    {
+                //        context.SaveChanges();  // Saves the new person to the database
+                //        var empl = new EmployeeTT() { Name = "Nadir", Surname = "Novruzov", Married = false, Gender = "M", Gender2 = Gender.Male };
+                //        await context.AddAsync(empl);
+                //        await context.SaveChangesAsync();
+
+                //        // Raw SQL operation: Update a person's age directly
+                //        //int rowsAffected = context.Database.ExecuteSqlRaw(
+                //        //    "UPDATE Persons SET Age = Age + 1 WHERE Name = {0}", newPerson.Name);
+                //        //Console.WriteLine($"{rowsAffected} rows affected by the raw SQL query.");
+
+                //        // Commit the transaction
+                //        scope.Complete();
+                //    }
+                //    catch (Exception ex)
+                //    {
+                //        // The transaction will be rolled back automatically if Complete is not called
+                //        Console.WriteLine($"Transaction failed: {ex.Message}");
+                //    }
+                //}
+
+
+                //In-Memory Database
 
 
             }

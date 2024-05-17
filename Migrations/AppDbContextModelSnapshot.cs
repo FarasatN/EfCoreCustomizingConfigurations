@@ -74,6 +74,9 @@ namespace EfCoreCustomizingConfigurations.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<string>("Titles")
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("EmployeesTT", (string)null);

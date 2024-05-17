@@ -12,8 +12,8 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace EfCoreCustomizingConfigurations.Migrations
 {
     [DbContext(typeof(Program.AppDbContext))]
-    [Migration("20240513181218_mig_value_conversion5")]
-    partial class mig_value_conversion5
+    [Migration("20240515094544_mig_value_conversion_builtin_json_serialization")]
+    partial class mig_value_conversion_builtin_json_serialization
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -56,6 +56,9 @@ namespace EfCoreCustomizingConfigurations.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("Married")
+                        .HasColumnType("int");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -72,6 +75,9 @@ namespace EfCoreCustomizingConfigurations.Migrations
 
                     b.Property<string>("Surname")
                         .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Titles")
                         .HasColumnType("nvarchar(max)");
 
                     b.HasKey("Id");

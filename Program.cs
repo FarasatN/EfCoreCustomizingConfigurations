@@ -1579,7 +1579,53 @@ namespace EfCoreShadowProperties
                 //}
 
 
-                //In-Memory Database
+                //In-Memory Database - real db olmadan, in-memory de db ni qurub kodu test etmeye yarayir,
+                //yeni cixan ef core ozelliklerini test etmek olar
+
+                //Test ve Pre-Prod ucun mumkundur
+
+                //Dezavantaji - relational modellemeler mumkun deyildir!!!!!
+
+                //ist. qaydasi - FluentApi
+                //Nuget - Microsoft.EntityFrameworkCore.InMemory
+
+                //In-Memory de migrationa ehtiyyac yoxdur
+
+                //await context.EmployeeTTs.AddAsync(new() { Name = "X", Surname = "Y", Married = false, Gender = "M", Gender2 = Gender.Male });
+                //await context.SaveChangesAsync();
+                //var emp = await context.EmployeeTTs.FirstOrDefaultAsync();
+                //Console.WriteLine();
+
+                //proqrami dayandiran kimi, avtomatik dispose olunacaq datalar, yeni temp de qalir
+                //CONSTRAINTLER KECMIR BURDA, qalan her seyi etmek olur
+                //yeni full desteklemir
+
+                //InMemory many to many example
+                // Arrange
+
+                //var student = new Student { Name = "Alice" };
+                //var course1 = new Course { Title = "Math" };
+                //var course2 = new Course { Title = "Science" };
+
+                //student.Courses.Add(course1);
+                //student.Courses.Add(course2);
+
+                //// Act
+                //context.Students.Add(student);
+                //context.SaveChanges();
+
+                //// Assert
+                //var retrievedStudent = context.Students
+                //    .Include(s => s.Courses)
+                //    .FirstOrDefault(s => s.Name == "Alice");
+
+                //Console.WriteLine();
+
+
+
+
+
+                //-----------------------------------------------
 
 
             }
@@ -1590,6 +1636,22 @@ namespace EfCoreShadowProperties
             //for exm: Execution Time: 5730 milliseconds / 5.73
             Console.ResetColor();
         }
+
+        //InMemory many to many example:
+        public class Student
+        {
+            public int StudentId { get; set; }
+            public string Name { get; set; }
+            public ICollection<Course> Courses { get; set; } = new List<Course>();
+        }
+
+        public class Course
+        {
+            public int CourseId { get; set; }
+            public string Title { get; set; }
+            public ICollection<Student> Students { get; set; } = new List<Student>();
+        }
+
 
         ////Custom Value Converter
         //public class GenderConverter : ValueConverter<Gender, string>
@@ -2500,8 +2562,13 @@ namespace EfCoreShadowProperties
                             //Select
                           t => JsonSerializer.Deserialize<List<string>>(t, (JsonSerializerOptions)null)
 
-                    ); 
+                    );
 
+
+                modelBuilder.Entity<Student>()
+                    .HasMany(s => s.Courses)
+                    .WithMany(c => c.Students)
+                    .UsingEntity(j => j.ToTable("StudentCourses"));
 
 
                 base.OnModelCreating(modelBuilder);
@@ -2569,10 +2636,12 @@ namespace EfCoreShadowProperties
 
                 //----------------------------------------
                 //CUSTOM EXECUTION STRATEGY
+                //optionsBuilder
+                //    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;");
+                //,builder => builder.ExecutionStrategy(dependencies=>new CustomExecutionStrategy(dependencies,5,TimeSpan.FromSeconds(15))));
+
                 optionsBuilder
-                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;");
-                    //,builder => builder.ExecutionStrategy(dependencies=>new CustomExecutionStrategy(dependencies,5,TimeSpan.FromSeconds(15))));
-                        
+                    .UseInMemoryDatabase("ExampleInMemoryDb");
 
 
                 //Query Logger
@@ -2631,6 +2700,10 @@ namespace EfCoreShadowProperties
 
             //Temporal Table
             public DbSet<EmployeeTT> EmployeeTTs { get; set; }
+
+            //InMemory many to many 
+            public DbSet<Student> Students { get; set; }
+            public DbSet<Course> Courses { get; set; }
 
         }
 

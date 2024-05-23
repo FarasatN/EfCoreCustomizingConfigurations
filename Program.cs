@@ -1626,7 +1626,25 @@ namespace EfCoreShadowProperties
 
 
                 //-----------------------------------------------
+                //Ef Core 7.0 ile gelen yeni ozellikler
 
+                //Bulk Update/Delete - toplu guncelleme/ silme
+                //Evveller bunu etmek ucun liste yigib uzerinde donerek tek tek icra edirdik bunlari, ya da RemoveRange ile
+
+                //var em = await context.EmployeeTTs.Where(e => e.Married == false).ToListAsync();
+                //context.RemoveRange(em);
+                //await context.SaveChangesAsync();
+
+                //Bulk 
+                //ExecuteUpdate 
+                //await context.EmployeeTTs.Where(e => e.Married == false).ExecuteUpdateAsync(e => e.SetProperty(e=>e.Name,value=>value.Name+" new"));//string interpolation xeta verecek amma($"..")
+
+                //ExecuteDelete
+                //await context.EmployeeTTs.Where(e => e.Married == false).ExecuteDeleteAsync();
+
+                //SAVECHANGES METODUNA EHTIYYAC YOXDUR
+
+                //transacction ile idare ede bilersiniz
 
             }
             //****************************
@@ -2636,12 +2654,13 @@ namespace EfCoreShadowProperties
 
                 //----------------------------------------
                 //CUSTOM EXECUTION STRATEGY
-                //optionsBuilder
-                //    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;");
-                //,builder => builder.ExecutionStrategy(dependencies=>new CustomExecutionStrategy(dependencies,5,TimeSpan.FromSeconds(15))));
-
                 optionsBuilder
-                    .UseInMemoryDatabase("ExampleInMemoryDb");
+                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;");
+                //,builder => builder.ExecutionStrategy(dependencies => new CustomExecutionStrategy(dependencies, 5, TimeSpan.FromSeconds(15))));
+
+                //In-Memory db
+                //optionsBuilder
+                //    .UseInMemoryDatabase("ExampleInMemoryDb");
 
 
                 //Query Logger

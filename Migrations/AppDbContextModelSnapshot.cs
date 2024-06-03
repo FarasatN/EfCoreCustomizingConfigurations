@@ -144,6 +144,82 @@ namespace EfCoreCustomizingConfigurations.Migrations
                     b.ToTable("Persons");
                 });
 
+            modelBuilder.Entity("EfCoreShadowProperties.Program+PersonEntitySpiltter", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("City")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Country")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PhoneNumber")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("PostCode")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Street")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Surname")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("PersonEntitySpiltters", null, t =>
+                        {
+                            t.Property("Id")
+                                .HasColumnName("Id");
+
+                            t.Property("Name")
+                                .HasColumnName("Name");
+
+                            t.Property("Surname")
+                                .HasColumnName("Surname");
+                        });
+
+                    b.SplitToTable("Addresses", null, t =>
+                        {
+                            t.Property("Id")
+                                .HasColumnName("PersonId");
+
+                            t.Property("City")
+                                .HasColumnName("City");
+
+                            t.Property("Country")
+                                .HasColumnName("Country");
+
+                            t.Property("PostCode")
+                                .HasColumnName("PostCode");
+
+                            t.Property("Street")
+                                .HasColumnName("Street");
+                        });
+
+                    b.SplitToTable("PhoneNumbers", null, t =>
+                        {
+                            t.Property("Id")
+                                .HasColumnName("PersonId");
+
+                            t.Property("PhoneNumber")
+                                .HasColumnName("PhoneNumber");
+                        });
+                });
+
             modelBuilder.Entity("EfCoreShadowProperties.Program+PersonOrder", b =>
                 {
                     b.Property<int>("Count")
@@ -204,6 +280,15 @@ namespace EfCoreCustomizingConfigurations.Migrations
                         .IsRequired();
 
                     b.Navigation("Person");
+                });
+
+            modelBuilder.Entity("EfCoreShadowProperties.Program+PersonEntitySpiltter", b =>
+                {
+                    b.HasOne("EfCoreShadowProperties.Program+PersonEntitySpiltter", null)
+                        .WithOne()
+                        .HasForeignKey("EfCoreShadowProperties.Program+PersonEntitySpiltter", "Id")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("EfCoreShadowProperties.Program+Photo", b =>

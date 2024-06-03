@@ -8,6 +8,8 @@ using Microsoft.EntityFrameworkCore.Metadata.Builders;
 using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using Microsoft.EntityFrameworkCore.Storage;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Internal;
 using Microsoft.Extensions.Logging;
 using Microsoft.VisualBasic;
@@ -19,6 +21,7 @@ using System.Diagnostics;
 using System.Diagnostics.Metrics;
 using System.Linq.Expressions;
 using System.Net.NetworkInformation;
+using System.Numerics;
 using System.Reflection;
 using System.Reflection.Emit;
 using System.Reflection.Metadata;
@@ -35,6 +38,13 @@ namespace EfCoreShadowProperties
 {
     public class Program
     {
+        //public static IHostBuilder CreateHostBuilder(string[] args) =>
+        //Host.CreateDefaultBuilder(args)
+        //    .ConfigureServices((_, services) =>
+        //        services
+        //            .AddSingleton<ILoggingService, LoggingService>()
+        //            .AddDbContext<AppDbContext>());
+
         public static async Task Main(string[] args)
         {
             Console.BackgroundColor = ConsoleColor.Black;
@@ -1646,6 +1656,54 @@ namespace EfCoreShadowProperties
 
                 //transacction ile idare ede bilersiniz
 
+
+                //Ef Core 7 ile Entity e Service inject etmek
+                //var host = CreateHostBuilder(args).Build();
+                //using (var scope = host.Services.CreateScope())
+                //{
+                //    var context2 = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+                //    // Example usage
+                //    var student = await context.Students.FirstOrDefaultAsync();
+                //    student.LogStudentName();
+                //}
+
+
+                //------------------------------------------------------
+                //Ef Core 7 ile Entity Splitting - birden artiq fiziksel table i kod terefinde-entity de butov olaraq temsil etmeyimizi temin edir
+                //Entity ozu bolunmur, db de table bolunur
+
+                //misal ucun:
+                //Persons, Address, PhoneNumbers db de table lar olacaq, Ef Core da ise tekce Persons entity si olacaq
+
+                PersonEntitySpiltter personEntitySpiltter = new()
+                {
+                    Name = "Frasat",
+                    Surname = "Novruzov",
+                    PhoneNumber = "+994773294110",
+                    City = "Saray",
+                    Street = "M. Asad",
+                    PostCode = "1100",
+                    Country = "Azerbaijan",
+                };
+                await context.PersonEntitySpiltters.AddAsync(personEntitySpiltter);
+                await context.SaveChangesAsync();
+                var person = await context.PersonEntitySpiltters.FindAsync(1);
+                Console.WriteLine();
+
+
+                //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+                //Summary
+                //Java: Enforces handling of certain exceptions(checked exceptions) at compile - time,
+                //making it impossible to ignore these exceptions.However, both Java and C# treat certain runtime errors (like StackOverflowError and StackOverflowException)
+                //as special cases that are not meant to be caught in typical application code.
+                //C#: Does not enforce exception handling at compile-time for any exceptions (all are unchecked),
+                //giving developers more flexibility but also more responsibility. Certain exceptions, like StackOverflowException, cannot be caught by design.
+                //In summary, Java's checked exceptions enforce handling for specific scenarios that can go unchecked in C#.
+                //This compile-time enforcement is a key difference that can impact the robustness of error handling in complex applications.
+                //>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
+
+
+
             }
             //****************************
             //executig stopped
@@ -1655,20 +1713,65 @@ namespace EfCoreShadowProperties
             Console.ResetColor();
         }
 
-        //InMemory many to many example:
-        public class Student
+        public class PersonEntitySpiltter
         {
-            public int StudentId { get; set; }
+            public int Id { get; set; }
             public string Name { get; set; }
-            public ICollection<Course> Courses { get; set; } = new List<Course>();
+            public string Surname { get; set; }
+
+            //PhoneNumbers table i
+            public string? PhoneNumber { get; set; }
+
+            //Addresses table i
+            public string Street { get; set; }
+            public string City { get; set; }
+            public string? PostCode { get; set; }
+            public string Country { get; set; }
+
         }
 
-        public class Course
-        {
-            public int CourseId { get; set; }
-            public string Title { get; set; }
-            public ICollection<Student> Students { get; set; } = new List<Student>();
-        }
+
+
+        //public interface ILoggingService
+        //{
+        //    void Log(string message);
+        //}
+
+        //public class LoggingService : ILoggingService
+        //{
+        //    public void Log(string message)
+        //    {
+        //        Console.WriteLine($"Log: {message}");
+        //    }
+        //}
+
+
+        //InMemory many to many example:
+        //public class Student
+        //{
+        //    private readonly ILoggingService _loggingService;
+
+        //    public Student(ILoggingService loggingService)
+        //    {
+        //        _loggingService = loggingService;
+        //    }
+
+        //    public int StudentId { get; set; }
+        //    public string Name { get; set; }
+        //    public ICollection<Course>? Courses { get; set; } = new List<Course>();
+
+        //    public void LogStudentName()
+        //    {
+        //        _loggingService.Log($"Student Name: {Name}");
+        //    }
+        //}
+
+        //public class Course
+        //{
+        //    public int CourseId { get; set; }
+        //    public string Title { get; set; }
+        //    public ICollection<Student> Students { get; set; } = new List<Student>();
+        //}
 
 
         ////Custom Value Converter
@@ -2092,6 +2195,19 @@ namespace EfCoreShadowProperties
 
         public class AppDbContext : DbContext
         {
+
+            //private readonly ILoggingService _loggingService;
+
+            //public AppDbContext(DbContextOptions<AppDbContext> options, ILoggingService loggingService)
+            //    : base(options)
+            //{
+            //    _loggingService = loggingService;
+            //}
+
+            public AppDbContext()
+            {
+            }
+
             protected override void OnModelCreating(ModelBuilder modelBuilder)
             {
                 //1 to 1
@@ -2583,11 +2699,61 @@ namespace EfCoreShadowProperties
                     );
 
 
-                modelBuilder.Entity<Student>()
-                    .HasMany(s => s.Courses)
-                    .WithMany(c => c.Students)
-                    .UsingEntity(j => j.ToTable("StudentCourses"));
+                //modelBuilder.Entity<Student>()
+                //    .HasMany(s => s.Courses)
+                //    .WithMany(c => c.Students)
+                //    .UsingEntity(j => j.ToTable("StudentCourses"));
 
+
+                //modelBuilder.Entity<Student>().HasData(
+                //     new Student(_loggingService) { Name="Mardan"}
+                //    );
+
+
+
+                //Entity Splitter conf.
+                modelBuilder.Entity<PersonEntitySpiltter>(entity =>
+                {
+                    entity.HasKey(e => e.Id);
+
+                    // Main table mapping
+                    entity.ToTable("PersonEntitySpiltters", tableBuilder =>
+                    {
+                        tableBuilder.Property(e => e.Id).HasColumnName("Id");
+                        tableBuilder.Property(e => e.Name).HasColumnName("Name");
+                        tableBuilder.Property(e => e.Surname).HasColumnName("Surname");
+                    });
+
+                    // PhoneNumber table mapping
+                    entity.SplitToTable("PhoneNumbers", tableBuilder =>
+                    {
+                        tableBuilder.Property(e => e.Id).HasColumnName("PersonId");
+                        tableBuilder.Property(e => e.PhoneNumber).HasColumnName("PhoneNumber");
+                    });
+
+                    // Address table mapping
+                    entity.SplitToTable("Addresses", tableBuilder =>
+                    {
+                        tableBuilder.Property(e => e.Id).HasColumnName("PersonId");
+                        tableBuilder.Property(e => e.Street).HasColumnName("Street");
+                        tableBuilder.Property(e => e.City).HasColumnName("City");
+                        tableBuilder.Property(e => e.PostCode).HasColumnName("PostCode");
+                        tableBuilder.Property(e => e.Country).HasColumnName("Country");
+                    });
+                });
+
+                //     PM > add - migration mig_entity_splitter
+                //Build started...
+                //Build succeeded.
+                //Ef Core Customizing Configurations!
+                //#1. Baglanti tekrar qrurulur...
+                //#2. Baglanti tekrar qrurulur...
+                //#3. Baglanti tekrar qrurulur...
+                //#4. Baglanti tekrar qrurulur...
+                //#5. Baglanti tekrar qrurulur...
+                //#6. Baglanti tekrar qrurulur...
+                //An error occurred while accessing the Microsoft.Extensions.Hosting services. Continuing without the application service provider. Error: The maximum number of retries(5) was exceeded while executing database operations with 'CustomExecutionStrategy'.See the inner exception for the most recent failure.
+                //To undo this action, use Remove - Migration.
 
                 base.OnModelCreating(modelBuilder);
 
@@ -2604,14 +2770,15 @@ namespace EfCoreShadowProperties
                 => FromExpression(()=>BestSellingStaff(totalOrderPrice));
 
 
-            StreamWriter _log = new("logs.txt",append: true);
+            StreamWriter _log = new("logs.txt", append: true);
 
-            readonly ILoggerFactory loggerFactory = LoggerFactory.Create(builder=>builder
+            readonly ILoggerFactory loggerFactory = LoggerFactory.Create(builder => builder
                 .AddFilter((category, level) =>//info seviyyesindeki loglari gosterir
                 {
-                   return category == DbLoggerCategory.Database.Command.Name && level == LogLevel.Information;
+                    return category == DbLoggerCategory.Database.Command.Name && level == LogLevel.Information;
                 })
                 .AddConsole());
+
             protected override async void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
             {
                 //# docker run -e 'ACCEPT_EULA=Y' -e 'SA_PASSWORD=87654321Fn@' -e 'MSSQL_PID_Express' -p 1439:1433 --name mssql --hostname mssql -d mcr.microsoft.com/mssql/server:2022-latest
@@ -2655,8 +2822,8 @@ namespace EfCoreShadowProperties
                 //----------------------------------------
                 //CUSTOM EXECUTION STRATEGY
                 optionsBuilder
-                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;");
-                //,builder => builder.ExecutionStrategy(dependencies => new CustomExecutionStrategy(dependencies, 5, TimeSpan.FromSeconds(15))));
+                    .UseSqlServer("Server=localhost,1439;Database=mssql;User Id=sa;Password=87654321Fn@;Encrypt=False;"
+                ,builder => builder.ExecutionStrategy(dependencies => new CustomExecutionStrategy(dependencies, 5, TimeSpan.FromSeconds(15))));
 
                 //In-Memory db
                 //optionsBuilder
@@ -2676,7 +2843,7 @@ namespace EfCoreShadowProperties
             public override async ValueTask DisposeAsync()
             {
                 await _log.DisposeAsync();
-                await base.DisposeAsync(); 
+                await base.DisposeAsync();
             }
 
             //public DbSet<Person> Persons { get; set; }
@@ -2721,8 +2888,11 @@ namespace EfCoreShadowProperties
             public DbSet<EmployeeTT> EmployeeTTs { get; set; }
 
             //InMemory many to many 
-            public DbSet<Student> Students { get; set; }
-            public DbSet<Course> Courses { get; set; }
+            //public DbSet<Student> Students { get; set; }
+            //public DbSet<Course> Courses { get; set; }
+
+            //Entity Splitter
+            public DbSet<PersonEntitySpiltter> PersonEntitySpiltters { get; set; }
 
         }
 
@@ -2759,24 +2929,24 @@ namespace EfCoreShadowProperties
 
 
 //Custom Execution Strategy
-//public class CustomExecutionStrategy : ExecutionStrategy
-//{
-//    public CustomExecutionStrategy(DbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(context, maxRetryCount, maxRetryDelay)
-//    {
-//    }
+public class CustomExecutionStrategy : ExecutionStrategy
+{
+    public CustomExecutionStrategy(DbContext context, int maxRetryCount, TimeSpan maxRetryDelay) : base(context, maxRetryCount, maxRetryDelay)
+    {
+    }
 
-//    public CustomExecutionStrategy(ExecutionStrategyDependencies dependencies, int maxRetryCount, TimeSpan maxRetryDelay) : base(dependencies, maxRetryCount, maxRetryDelay)
-//    {
-//    }
+    public CustomExecutionStrategy(ExecutionStrategyDependencies dependencies, int maxRetryCount, TimeSpan maxRetryDelay) : base(dependencies, maxRetryCount, maxRetryDelay)
+    {
+    }
 
-//    int retryCount = 0;
-//    protected override bool ShouldRetryOn(Exception exception)
-//    {
-//        //Yeniden baglanilma durumu
-//        Console.WriteLine($"#{++retryCount}. Baglanti tekrar qrurulur...");
-//        return true;
-//    }
-//}
+    int retryCount = 0;
+    protected override bool ShouldRetryOn(Exception exception)
+    {
+        //Yeniden baglanilma durumu
+        Console.WriteLine($"#{++retryCount}. Baglanti tekrar qrurulur...");
+        return true;
+    }
+}
 
 
 
